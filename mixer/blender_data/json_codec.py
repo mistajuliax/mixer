@@ -90,7 +90,7 @@ def default(obj):
         for attribute_name in class_._serialize:
             attribute = getattr(obj, attribute_name, None)
             if attribute is not None:
-                dict_.update({attribute_name: attribute})
+                dict_[attribute_name] = attribute
 
         return dict_
 

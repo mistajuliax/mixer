@@ -130,8 +130,7 @@ def encode_bmesh_layer(layer_collection, element_seq, extract_layer_tuple_func):
 # We cannot iterate directly over bm.loops, so we use a generator
 def loops_iterator(bm):
     for face in bm.faces:
-        for loop in face.loops:
-            yield loop
+        yield from face.loops
 
 
 def encode_baked_mesh(obj):
@@ -346,13 +345,13 @@ def encode_base_mesh(obj):
         binary_buffer += common.encode_bool(mesh_data.shape_keys.use_relative)
 
     # Vertex Groups
-    verts_per_group = {}
-    for vertex_group in obj.vertex_groups:
-        verts_per_group[vertex_group.index] = []
+    verts_per_group = {
+        vertex_group.index: [] for vertex_group in obj.vertex_groups
+    }
+
     for vert in mesh_data.vertices:
         for vg in vert.groups:
-            weighted_vertices = verts_per_group.get(vg.group, None)
-            if weighted_vertices:
+            if weighted_vertices := verts_per_group.get(vg.group, None):
                 weighted_vertices.append((vert.index, vg.weight))
 
     binary_buffer += common.encode_int(len(obj.vertex_groups))
@@ -412,9 +411,11 @@ def encode_mesh(obj, do_encode_base_mesh, do_encode_baked_mesh):
         binary_buffer += common.encode_int(0)
 
     # Materials
-    materials = []
-    for material in obj.data.materials:
-        materials.append(material.name_full if material is not None else "")
+    materials = [
+        material.name_full if material is not None else ""
+        for material in obj.data.materials
+    ]
+
     binary_buffer += common.encode_string_array(materials)
 
     return binary_buffer
@@ -442,14 +443,8 @@ def decode_baked_mesh(obj: Optional[bpy.types.Object], data, index):
             # vertex.normal = normals[i]
         bm.verts.ensure_lookup_table()
 
-        uv_layer = None
-        if len(uvs) > 0:
-            uv_layer = bm.loops.layers.uv.new()
-
-        multi_material = False
-        if len(material_indices) > 1:
-            multi_material = True
-
+        uv_layer = bm.loops.layers.uv.new() if len(uvs) > 0 else None
+        multi_material = len(material_indices) > 1
         current_uv_index = 0
         for i in range(len(triangles)):
             triangle = triangles[i]
@@ -458,10 +453,7 @@ def decode_baked_mesh(obj: Optional[bpy.types.Object], data, index):
             i3 = triangle[2]
             try:
                 face = bm.faces.new((bm.verts[i1], bm.verts[i2], bm.verts[i3]))
-                if multi_material:
-                    face.material_index = material_indices[i]
-                else:
-                    face.material_index = 0
+                face.material_index = material_indices[i] if multi_material else 0
                 if uv_layer:
                     face.loops[0][uv_layer].uv = uvs[current_uv_index]
                     face.loops[1][uv_layer].uv = uvs[current_uv_index + 1]

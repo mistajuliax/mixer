@@ -74,8 +74,7 @@ class LibraryProxy(DatablockProxy):
             logger.error(f"... with {self._unregistered_datablocks[identifier]}. Update ignored")
             return None
 
-        library_datablock = bpy.data.libraries.get(self._data["name"])
-        if library_datablock:
+        if library_datablock := bpy.data.libraries.get(self._data["name"]):
             # The library is already loaded. Register the linked datablock at once.
             # Registration in ProxyState.datablocks is performed by a caller during datablock creation
             # TODO/perf: users_id iterates over all items of all collections
@@ -167,8 +166,7 @@ class LibraryProxy(DatablockProxy):
         # TODO/perf: users_id iterates over all items of all collections
         for linked_datablock in library_datablock.users_id:
             identifier = repr(linked_datablock)
-            uuid = self._unregistered_datablocks.get(identifier)
-            if uuid:
+            if uuid := self._unregistered_datablocks.get(identifier):
                 # logger.warning(f"register indirect at load {identifier} {uuid}")
                 linked_datablock.mixer_uuid = uuid
                 proxy_state.proxies[uuid]._has_datablock = True
@@ -229,7 +227,6 @@ class LibraryProxy(DatablockProxy):
             to_blender: update attribute in addition to this Proxy
         """
         raise NotImplementedError("LibraryProxy.apply()")
-        return self
 
     def diff(
         self,
@@ -239,7 +236,6 @@ class LibraryProxy(DatablockProxy):
         context: Context,
     ) -> Optional[DeltaUpdate]:
         raise NotImplementedError("LibraryProxy.diff()")
-        return None
 
 
 @serialize

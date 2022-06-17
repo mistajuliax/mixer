@@ -95,13 +95,12 @@ def build_collection_to_scene(data):
     try:
         scene = share_data.blender_scenes[scene_name]
     except KeyError:
-        if not share_data.use_vrtist_protocol():
-            # Removed by the Blender Protocol
-            logger.info(f"build_collection_to_scene(): scene not found {scene_name}. Safe in generic mode ...")
-            return
-        else:
+        if share_data.use_vrtist_protocol():
             raise
 
+        # Removed by the Blender Protocol
+        logger.info(f"build_collection_to_scene(): scene not found {scene_name}. Safe in generic mode ...")
+        return
     collection = share_data.blender_collections[collection_name]
     try:
         scene.collection.children.link(collection)
@@ -136,8 +135,7 @@ def build_remove_collection_from_scene(data):
 
     logger.info("build_remove_collection_from_scene %s <- %s", scene_name, collection_name)
     scene = share_data.blender_scenes[scene_name]
-    collection = share_data.blender_collections.get(collection_name)
-    if collection:
+    if collection := share_data.blender_collections.get(collection_name):
         # otherwise already removed by Blender protocol
         try:
             scene.collection.children.unlink(collection)
@@ -166,13 +164,12 @@ def build_add_object_to_scene(data):
     try:
         scene = share_data.blender_scenes[scene_name]
     except KeyError:
-        if not share_data.use_vrtist_protocol():
-            # Removed by the Blender Protocol
-            logger.info(f"build_collection_to_scene(): scene not found {scene_name}. Safe in generic mode ...")
-            return
-        else:
+        if share_data.use_vrtist_protocol():
             raise
 
+        # Removed by the Blender Protocol
+        logger.info(f"build_collection_to_scene(): scene not found {scene_name}. Safe in generic mode ...")
+        return
     # We may have received an object creation message before this collection link message
     # and object creation will have created and linked the collecetion if needed
     if scene.collection.objects.get(object_name) is None:
@@ -193,8 +190,7 @@ def build_remove_object_from_scene(data):
     object_name, _ = common.decode_string(data, index)
     logger.info("build_remove_object_from_scene %s <- %s", scene_name, object_name)
     scene = share_data.blender_scenes[scene_name]
-    object_ = share_data.blender_objects.get(object_name)
-    if object_:
+    if object_ := share_data.blender_objects.get(object_name):
         # otherwise already removed by Blender protocol
         try:
             scene.collection.objects.unlink(object_)

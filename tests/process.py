@@ -121,7 +121,7 @@ class BlenderProcess(Process):
         if blender_args is not None:
             popen_args.extend(blender_args)
         if python_script_path is not None:
-            popen_args.extend(["--python", str(python_script_path)])
+            popen_args.extend(["--python", python_script_path])
         if script_args is not None:
             popen_args.append("--")
             popen_args.extend([str(arg) for arg in script_args])
@@ -131,7 +131,7 @@ class BlenderProcess(Process):
             "shell": False,
             "env": env,
         }
-        popen_kwargs.update(_popen_redirect)
+        popen_kwargs |= _popen_redirect
         super().start(popen_args, popen_kwargs)
 
 
@@ -173,11 +173,7 @@ class BlenderServer(BlenderProcess):
 
         # anti-virus might delay if Blender is launched for the first time
         # allow time to attach debugger
-        if self._wait_for_debugger:
-            max_wait = sys.maxsize
-        else:
-            max_wait = 20
-
+        max_wait = sys.maxsize if self._wait_for_debugger else 20
         start = time.monotonic()
         while not connected and time.monotonic() - start < max_wait:
             try:
@@ -245,16 +241,14 @@ class PythonProcess(Process):
         logger.info(f"Using python : {self._python_path}")
 
     def start(self, args: Optional[Iterable[Any]] = ()) -> str:
-        popen_args = [self._python_path]
-        popen_args.extend([str(arg) for arg in args])
-
+        popen_args = [self._python_path, *[str(arg) for arg in args]]
         # stdout will be a xmlrunner.result._DuplicateWriter
         # and redirecting onto it raises "io.UnsupportedOperation: fileno"
         popen_kwargs = {
             "creationflags": subprocess.CREATE_NEW_CONSOLE,
             "shell": False,
         }
-        popen_kwargs.update(_popen_redirect)
+        popen_kwargs |= _popen_redirect
 
         return super().start(popen_args, popen_kwargs)
 
@@ -279,9 +273,14 @@ class ServerProcess(PythonProcess):
         else:
             raise RuntimeError(f"A server listening at {self.host}:{self.port} already exists. Aborting")
 
-        args = ["-m", "mixer.broadcaster.apps.server"]
-        args.extend(["--port", str(self.port)])
-        args.extend(["--log-level", "WARNING"])
+        args = [
+            "-m",
+            "mixer.broadcaster.apps.server",
+            *["--port", str(self.port)],
+            "--log-level",
+            "WARNING",
+        ]
+
         if server_args:
             args.extend(server_args)
         super().start(args)

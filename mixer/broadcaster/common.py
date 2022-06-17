@@ -252,18 +252,12 @@ def int_to_message_type(value):
 
 
 def encode_bool(value):
-    if value:
-        return int_to_bytes(1, 4)
-    else:
-        return int_to_bytes(0, 4)
+    return int_to_bytes(1, 4) if value else int_to_bytes(0, 4)
 
 
 def decode_bool(data, index):
     value = bytes_to_int(data[index : index + 4])
-    if value == 1:
-        return True, index + 4
-    else:
-        return False, index + 4
+    return (True, index + 4) if value == 1 else (False, index + 4)
 
 
 def encode_string(value):
@@ -437,8 +431,7 @@ def encode_py_array(data: array.array) -> bytes:
     typecode = data.typecode
     count = data.buffer_info()[1]
     byte_count = count * data.itemsize
-    buffer = encode_string(typecode) + encode_int(byte_count) + data.tobytes()
-    return buffer
+    return encode_string(typecode) + encode_int(byte_count) + data.tobytes()
 
 
 def decode_py_array(buffer: bytes, index: int) -> Tuple[array.array, int]:
@@ -474,10 +467,10 @@ class Command:
 
 class CommandFormatter:
     def format_clients(self, clients):
-        s = ""
-        for c in clients:
-            s += f'   - {c[ClientAttributes.IP]}:{c[ClientAttributes.PORT]} name = "{c[ClientAttributes.USERNAME]}" room = "{c[ClientAttributes.ROOM]}"\n'
-        return s
+        return "".join(
+            f'   - {c[ClientAttributes.IP]}:{c[ClientAttributes.PORT]} name = "{c[ClientAttributes.USERNAME]}" room = "{c[ClientAttributes.ROOM]}"\n'
+            for c in clients
+        )
 
     def format(self, command: Command):
 
@@ -486,10 +479,7 @@ class CommandFormatter:
         if command.type == MessageType.LIST_ROOMS:
             rooms, _ = decode_string_array(command.data, 0)
             s += "LIST_ROOMS: "
-            if len(rooms) == 0:
-                s += "  No rooms"
-            else:
-                s += f" {len(rooms)} room(s) : {rooms}"
+            s += "  No rooms" if len(rooms) == 0 else f" {len(rooms)} room(s) : {rooms}"
         elif command.type == MessageType.LIST_CLIENTS:
             clients, _ = decode_json(command.data, 0)
             if len(clients) == 0:
@@ -499,9 +489,6 @@ class CommandFormatter:
                 s += self.format_clients(clients)
         elif command.type == MessageType.SEND_ERROR:
             s += f"ERROR: {decode_string(command.data, 0)[0]}\n"
-        else:
-            pass
-
         return s
 
 

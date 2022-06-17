@@ -202,9 +202,7 @@ class ROOM_UL_ItemRenderer(bpy.types.UIList):  # noqa
         sub_row = row.row()
 
         current_room_row = sub_row.row()
-        icon_current_room = "BLANK1"
-        if is_current_room:
-            icon_current_room = "HOME"
+        icon_current_room = "HOME" if is_current_room else "BLANK1"
         current_room_row.label(text="", icon=icon_current_room)
 
         icon_warning = "BLANK1"
@@ -419,10 +417,7 @@ class MixerSettingsPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         mixer_prefs = get_mixer_prefs()
-        return (
-            "MIXER" == mixer_prefs.display_mixer_vrtist_panels
-            or "MIXER_AND_VRTIST" == mixer_prefs.display_mixer_vrtist_panels
-        )
+        return mixer_prefs.display_mixer_vrtist_panels in ["MIXER", "MIXER_AND_VRTIST"]
 
     def connected(self):
         return share_data.client is not None and share_data.client.is_connected()
@@ -528,22 +523,28 @@ class MixerSettingsPanel(bpy.types.Panel):
                 self.draw_current_room_properties(layout)
 
             prefs = get_mixer_prefs()
-            if prefs.display_debugging_tools:
-                if collapsable_panel(layout, mixer_props, "display_advanced_room_control", text="Room Debugging Tools"):
-                    box = layout.box()
-                    col = box.column()
-                    col.operator(bl_operators.DeleteRoomOperator.bl_idname)
-                    col.operator(bl_operators.DownloadRoomOperator.bl_idname)
-                    subbox = col.box()
-                    subbox.row().operator(bl_operators.UploadRoomOperator.bl_idname)
-                    row = subbox.row()
-                    row.prop(mixer_props, "upload_room_name", text="Name")
-                    row.prop(
-                        mixer_props,
-                        "internal_upload_room_filepath",
-                        text="File",
-                        icon=("ERROR" if not os.path.exists(mixer_props.upload_room_filepath) else "NONE"),
-                    )
+            if prefs.display_debugging_tools and collapsable_panel(
+                layout,
+                mixer_props,
+                "display_advanced_room_control",
+                text="Room Debugging Tools",
+            ):
+                box = layout.box()
+                col = box.column()
+                col.operator(bl_operators.DeleteRoomOperator.bl_idname)
+                col.operator(bl_operators.DownloadRoomOperator.bl_idname)
+                subbox = col.box()
+                subbox.row().operator(bl_operators.UploadRoomOperator.bl_idname)
+                row = subbox.row()
+                row.prop(mixer_props, "upload_room_name", text="Name")
+                row.prop(
+                    mixer_props,
+                    "internal_upload_room_filepath",
+                    text="File",
+                    icon="NONE"
+                    if os.path.exists(mixer_props.upload_room_filepath)
+                    else "ERROR",
+                )
 
     def draw_shared_folders_options(self, layout):
         mixer_props = get_mixer_props()
@@ -725,10 +726,10 @@ class VRtistSettingsPanel(bpy.types.Panel):
     @classmethod
     def poll(cls, context):
         mixer_prefs = get_mixer_prefs()
-        return (
-            "VRTIST" == mixer_prefs.display_mixer_vrtist_panels
-            or "MIXER_AND_VRTIST" == mixer_prefs.display_mixer_vrtist_panels
-        )
+        return mixer_prefs.display_mixer_vrtist_panels in [
+            "VRTIST",
+            "MIXER_AND_VRTIST",
+        ]
 
     def draw_header(self, context):
         self.layout.emboss = "NONE"
@@ -764,8 +765,12 @@ class VRtistSettingsPanel(bpy.types.Panel):
 
         layout.separator(factor=1)
         layout.prop(
-            mixer_prefs, "VRtist", text="Path", icon=("ERROR" if not os.path.exists(mixer_prefs.VRtist) else "NONE")
+            mixer_prefs,
+            "VRtist",
+            text="Path",
+            icon="NONE" if os.path.exists(mixer_prefs.VRtist) else "ERROR",
         )
+
         layout.prop(mixer_prefs, "VRtist_suffix", text="Save Suffix")
         layout.separator(factor=0.5)
 

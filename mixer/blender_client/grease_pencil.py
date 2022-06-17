@@ -28,13 +28,11 @@ def send_grease_pencil_stroke(stroke):
     buffer = common.encode_int(stroke.material_index)
     buffer += common.encode_int(stroke.line_width)
 
-    points = list()
+    points = []
 
     for point in stroke.points:
         points.extend(point.co)
-        points.append(point.pressure)
-        points.append(point.strength)
-
+        points.extend((point.pressure, point.strength))
     binary_points_buffer = common.int_to_bytes(len(stroke.points), 4) + struct.pack(f"{len(points)}f", *points)
     buffer += binary_points_buffer
     return buffer
@@ -86,10 +84,7 @@ def send_grease_pencil_mesh(client: Client, obj):
 
     buffer += common.encode_int(len(grease_pencil.materials))
     for material in grease_pencil.materials:
-        if not material:
-            material_name = "Default"
-        else:
-            material_name = material.name_full
+        material_name = material.name_full if material else "Default"
         buffer += common.encode_string(material_name)
 
     buffer += common.encode_int(len(grease_pencil.layers))
@@ -167,11 +162,15 @@ def decode_grease_pencil_stroke(grease_pencil_frame, stroke_index, data, index):
 
 def decode_grease_pencil_frame(grease_pencil_layer, data, index):
     grease_pencil_frame, index = common.decode_int(data, index)
-    frame = None
-    for f in grease_pencil_layer.frames:
-        if f.frame_number == grease_pencil_frame:
-            frame = f
-            break
+    frame = next(
+        (
+            f
+            for f in grease_pencil_layer.frames
+            if f.frame_number == grease_pencil_frame
+        ),
+        None,
+    )
+
     if not frame:
         frame = grease_pencil_layer.frames.new(grease_pencil_frame)
     stroke_count, index = common.decode_int(data, index)

@@ -46,12 +46,12 @@ class TestWorld(unittest.TestCase):
 
         self.diff.diff(self.bpy_data_proxy, safe_properties)
         sent_ids = {}
-        sent_ids.update({("worlds", world.name): world})
+        sent_ids[("worlds", world.name)] = world
 
         changeset = self.bpy_data_proxy.update(self.diff, {}, False, safe_properties)
         updates = changeset.creations
         # avoid clash on restore
-        world.name = world.name + "_bak"
+        world.name = f"{world.name}_bak"
 
         codec = Codec()
         for update in updates:
@@ -77,12 +77,12 @@ class TestWorld(unittest.TestCase):
 
         self.diff.diff(self.bpy_data_proxy, safe_properties)
         sent_ids = {}
-        sent_ids.update({("worlds", world.name): world})
+        sent_ids[("worlds", world.name)] = world
 
         changeset = self.bpy_data_proxy.update(self.diff, {}, False, safe_properties)
         creations = changeset.creations
         # avoid clash on restore
-        world.name = world.name + "_bak"
+        world.name = f"{world.name}_bak"
 
         codec = Codec()
         for update in creations:

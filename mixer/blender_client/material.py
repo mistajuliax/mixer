@@ -90,10 +90,9 @@ def build_material(data):
     start = end
 
     material = get_or_create_material(material_name)
-    nodes = material.node_tree.nodes
     # Get a principled node
     principled = None
-    if nodes:
+    if nodes := material.node_tree.nodes:
         for n in nodes:
             if n.type == "BSDF_PRINCIPLED":
                 principled = n
@@ -181,21 +180,19 @@ def get_material_buffer(client: Client, material):
     diffuse = None
     # Get the nodes in the node tree
     if material.node_tree:
-        nodes = material.node_tree.nodes
-        # Get a principled node
-        if nodes:
+        if nodes := material.node_tree.nodes:
             for n in nodes:
                 if n.type == "BSDF_PRINCIPLED":
                     principled = n
                     break
                 if n.type == "BSDF_DIFFUSE":
                     diffuse = n
-        # principled = next(n for n in nodes if n.type == 'BSDF_PRINCIPLED')
+            # principled = next(n for n in nodes if n.type == 'BSDF_PRINCIPLED')
+    metallic = 0.0
+    opacity = 1.0
     if principled is None and diffuse is None:
         base_color = (0.8, 0.8, 0.8)
-        metallic = 0.0
         roughness = 0.5
-        opacity = 1.0
         emission_color = (0.0, 0.0, 0.0)
         buffer += common.encode_float(opacity) + common.encode_string("")
         buffer += common.encode_color(base_color) + common.encode_string("")
@@ -205,9 +202,7 @@ def get_material_buffer(client: Client, material):
         buffer += common.encode_color(emission_color) + common.encode_string("")
         return buffer
     elif diffuse:
-        opacity = 1.0
         opacity_texture = None
-        metallic = 0.0
         metallic_texture = None
         emission = (0.0, 0.0, 0.0)
         emission_texture = None
@@ -216,23 +211,19 @@ def get_material_buffer(client: Client, material):
         # Or principled.inputs[0]
         base_color = (1.0, 1.0, 1.0)
         base_color_texture = None
-        base_color_input = diffuse.inputs.get("Color")
-        # Get its default value (not the value from a possible link)
-        if base_color_input:
+        if base_color_input := diffuse.inputs.get("Color"):
             base_color = base_color_input.default_value
             base_color_texture = client.get_texture(base_color_input)
 
         roughness = 1.0
         roughness_texture = None
-        roughness_input = diffuse.inputs.get("Roughness")
-        if roughness_input:
+        if roughness_input := diffuse.inputs.get("Roughness"):
             roughness_texture = client.get_texture(roughness_input)
             if len(roughness_input.links) == 0:
                 roughness = roughness_input.default_value
 
         normal_texture = None
-        norma_input = diffuse.inputs.get("Normal")
-        if norma_input:
+        if norma_input := diffuse.inputs.get("Normal"):
             if len(norma_input.links) == 1:
                 normal_map = norma_input.links[0].from_node
                 if "Color" in normal_map.inputs:
@@ -240,10 +231,8 @@ def get_material_buffer(client: Client, material):
                     normal_texture = client.get_texture(color_input)
 
     else:
-        opacity = 1.0
         opacity_texture = None
-        opacity_input = principled.inputs.get("Transmission")
-        if opacity_input:
+        if opacity_input := principled.inputs.get("Transmission"):
             if len(opacity_input.links) == 1:
                 invert = opacity_input.links[0].from_node
                 if "Color" in invert.inputs:
@@ -256,31 +245,25 @@ def get_material_buffer(client: Client, material):
         # Or principled.inputs[0]
         base_color = (1.0, 1.0, 1.0)
         base_color_texture = None
-        base_color_input = principled.inputs.get("Base Color")
-        # Get its default value (not the value from a possible link)
-        if base_color_input:
+        if base_color_input := principled.inputs.get("Base Color"):
             base_color = base_color_input.default_value
             base_color_texture = client.get_texture(base_color_input)
 
-        metallic = 0.0
         metallic_texture = None
-        metallic_input = principled.inputs.get("Metallic")
-        if metallic_input:
+        if metallic_input := principled.inputs.get("Metallic"):
             metallic_texture = client.get_texture(metallic_input)
             if len(metallic_input.links) == 0:
                 metallic = metallic_input.default_value
 
         roughness = 1.0
         roughness_texture = None
-        roughness_input = principled.inputs.get("Roughness")
-        if roughness_input:
+        if roughness_input := principled.inputs.get("Roughness"):
             roughness_texture = client.get_texture(roughness_input)
             if len(roughness_input.links) == 0:
                 roughness = roughness_input.default_value
 
         normal_texture = None
-        norma_input = principled.inputs.get("Normal")
-        if norma_input:
+        if norma_input := principled.inputs.get("Normal"):
             if len(norma_input.links) == 1:
                 normal_map = norma_input.links[0].from_node
                 if "Color" in normal_map.inputs:
@@ -289,8 +272,7 @@ def get_material_buffer(client: Client, material):
 
         emission = (0.0, 0.0, 0.0)
         emission_texture = None
-        emission_input = principled.inputs.get("Emission")
-        if emission_input:
+        if emission_input := principled.inputs.get("Emission"):
             # Get its default value (not the value from a possible link)
             emission = emission_input.default_value
             emission_texture = client.get_texture(emission_input)

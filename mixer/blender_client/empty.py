@@ -25,6 +25,5 @@ logger = logging.getLogger(__name__)
 
 def send_empty(client: Client, obj):
     path = get_object_path(obj)
-    buffer = common.encode_string(path)
-    if buffer:
+    if buffer := common.encode_string(path):
         client.add_command(common.Command(common.MessageType.EMPTY, buffer, 0))

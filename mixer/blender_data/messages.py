@@ -66,8 +66,7 @@ def soa_buffers(datablock_proxy: Optional[DatablockProxy]) -> List[bytes]:
     #           element name: "vertices"
     #           array
 
-    items: List[bytes] = []
-    items.append(encode_int(len(datablock_proxy._soas)))
+    items: List[bytes] = [encode_int(len(datablock_proxy._soas))]
     for path, soa_proxies in datablock_proxy._soas.items():
         path_string = json.dumps(path)
         items.append(encode_string(path_string))
@@ -86,8 +85,7 @@ def encode_arrays(datablock_proxy: DatablockProxy) -> List[bytes]:
     if not hasattr(datablock_proxy, "_arrays"):
         return [encode_int(0)]
 
-    items = []
-    items.append(encode_int(len(datablock_proxy._arrays)))
+    items = [encode_int(len(datablock_proxy._arrays))]
     for array_group_name, arrays in datablock_proxy._arrays.items():
         # for vertex groups, _arrays layout is
         # { "vertex_groups: [
@@ -178,8 +176,7 @@ class BlenderDataMessage:
 
     @staticmethod
     def encode(datablock_proxy: DatablockProxy, encoded_proxy: str) -> bytes:
-        items = []
-        items.append(encode_string(encoded_proxy))
+        items = [encode_string(encoded_proxy)]
         items.extend(soa_buffers(datablock_proxy))
         items.extend(encode_arrays(datablock_proxy))
         return b"".join(items)

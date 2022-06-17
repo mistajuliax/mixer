@@ -43,8 +43,9 @@ class Vrtist_OT_About(Operator):  # noqa 801
         row = box.row()
         row.separator()
         row.label(
-            text=f"Version: {display_version or '(Unknown version)'}   -   ({'March 2021'})   -    Ubisoft Animation Studio"
+            text=f"Version: {display_version or '(Unknown version)'}   -   (March 2021)   -    Ubisoft Animation Studio"
         )
+
 
         # Authors
         ###############

@@ -96,7 +96,7 @@ class TestWriteAttribute(unittest.TestCase):
         co_proxy[2] *= 2
 
         vertices_proxy.save(cube.vertices, cube, "vertices", self.proxy.context())
-        self.assertListEqual(list(cube.vertices[0].co[0:3]), co_proxy[0:3].tolist())
+        self.assertListEqual(list(cube.vertices[0].co[:3]), co_proxy[:3].tolist())
 
     # explicit test per data type , including addition in collections
 
@@ -109,7 +109,7 @@ class TestWriteAttribute(unittest.TestCase):
         light.name = "light_bak"
         light_bak = D.lights["light_bak"]
 
-        light_proxy._datablock_uuid = "__" + light_proxy._datablock_uuid
+        light_proxy._datablock_uuid = f"__{light_proxy._datablock_uuid}"
         datablock, _ = light_proxy.create_standalone_datablock(self.proxy.context())
         self.assertEqual(datablock, light_bak)
 
@@ -124,7 +124,7 @@ class TestWriteAttribute(unittest.TestCase):
 
         world = D.worlds.new(world_name)
 
-        world_proxy._datablock_uuid = "__" + world_proxy._datablock_uuid
+        world_proxy._datablock_uuid = f"__{world_proxy._datablock_uuid}"
         datablock, _ = world_proxy.create_standalone_datablock(self.proxy.context())
 
         self.assertEqual(datablock, world_bak)
@@ -147,7 +147,7 @@ class TestWriteAttribute(unittest.TestCase):
         light = None
 
         light_proxy = self.proxy.data("lights").search_one(light_name)
-        light_proxy._datablock_uuid = "__" + light_proxy._datablock_uuid
+        light_proxy._datablock_uuid = f"__{light_proxy._datablock_uuid}"
         light, _ = light_proxy.create_standalone_datablock(self.proxy.context())
         curve = light.falloff_curve.curves[0]
         for i, point in enumerate(points):
@@ -173,7 +173,7 @@ class TestWriteAttribute(unittest.TestCase):
         light = None
 
         light_proxy = self.proxy.data("lights").search_one(light_name)
-        light_proxy._datablock_uuid = "__" + light_proxy._datablock_uuid
+        light_proxy._datablock_uuid = f"__{light_proxy._datablock_uuid}"
         light, _ = light_proxy.create_standalone_datablock(self.proxy.context())
 
         dst_curve = light.falloff_curve.curves[0]
@@ -188,7 +188,7 @@ class TestWriteAttribute(unittest.TestCase):
         self.assertEqual(len(dst_points), len(dst_curve.points))
 
         # restore again, save needs to shrink
-        light_proxy._datablock_uuid = "__" + light_proxy._datablock_uuid
+        light_proxy._datablock_uuid = f"__{light_proxy._datablock_uuid}"
         light, _ = light_proxy.create_standalone_datablock(self.proxy.context())
 
         dst_curve = light.falloff_curve.curves[0]
@@ -218,7 +218,7 @@ class TestWriteAttribute(unittest.TestCase):
         # the dst curvemap has 2 points by default
         # save() needs to extend
         light_proxy = self.proxy.data("lights").search_one(light_name)
-        light_proxy._datablock_uuid = "__" + light_proxy._datablock_uuid
+        light_proxy._datablock_uuid = f"__{light_proxy._datablock_uuid}"
         light, _ = light_proxy.create_standalone_datablock(self.proxy.context())
 
         dst_curve = light.falloff_curve.curves[0]
@@ -244,7 +244,7 @@ class TestWriteAttribute(unittest.TestCase):
         scene.name = "scene_bak"
         scene_bak = D.scenes["scene_bak"]
 
-        scene_proxy._datablock_uuid = "__" + scene_proxy._datablock_uuid
+        scene_proxy._datablock_uuid = f"__{scene_proxy._datablock_uuid}"
         datablock, _ = scene_proxy.create_standalone_datablock(self.proxy.context())
         self.assertEqual(datablock, scene_bak)
 
@@ -279,6 +279,6 @@ class TestWriteAttribute(unittest.TestCase):
         camera.name = "camera_bak"
 
         camera_proxy = self.proxy.data("cameras").search_one(camera_name)
-        camera_proxy._datablock_uuid = "__" + camera_proxy._datablock_uuid
+        camera_proxy._datablock_uuid = f"__{camera_proxy._datablock_uuid}"
         datablock, _ = camera_proxy.create_standalone_datablock(self.proxy.context())
         self.assertEqual(datablock.dof.focus_object, focus_object)

@@ -33,7 +33,7 @@ def main():
     tags_str = str(cp.stdout, encoding="utf8").strip()
     all_tags = set(tags_str.split("\n")) if tags_str != "" else set()
 
-    if len(all_tags) > 0:
+    if all_tags:
         version = get_version()
         if "dirty" in version:
             print("Please commit or discard/stash your changes before running this script.")

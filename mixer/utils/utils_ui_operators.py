@@ -40,7 +40,7 @@ class Mixer_OT_Open_Documentation_Url(Operator):  # noqa 801
     def invoke(self, context, event):
         if event.shift:
             # copy path to clipboard
-            cmd = "echo " + (self.path).strip() + "|clip"
+            cmd = f"echo {(self.path).strip()}|clip"
             subprocess.check_call(cmd, shell=True)
         else:
             open_folder(self.path)
@@ -62,16 +62,15 @@ class Mixer_OT_Open_Explorer(Operator):  # noqa 801
 
         if event.shift:
             # copy path to clipboard
-            cmd = "echo " + (abs_path).strip() + "|clip"
+            cmd = f"echo {(abs_path).strip()}|clip"
             subprocess.check_call(cmd, shell=True)
 
-        else:
-            if Path(abs_path).exists():
-                abs_path = abs_path.replace(os.sep, "/")
-                open_folder(abs_path)
+        elif Path(abs_path).exists():
+            abs_path = abs_path.replace(os.sep, "/")
+            open_folder(abs_path)
 
-            else:
-                print(f"Open Explorer failed: Path not found: {Path(abs_path)}")
+        else:
+            print(f"Open Explorer failed: Path not found: {Path(abs_path)}")
 
         return {"FINISHED"}
 

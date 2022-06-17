@@ -374,8 +374,7 @@ class BpyDataProxy(Proxy):
         """Compare post undo uuid state to recover undone uuids."""
         all_undone: List[Tuple[str, Dict[str, Uuid]]] = []
         for collection_proxy in self._data.values():
-            undone = collection_proxy.snapshot_undo_post()
-            if undone:
+            if undone := collection_proxy.snapshot_undo_post():
                 all_undone.append(undone)
 
         # only for logging
@@ -385,9 +384,7 @@ class BpyDataProxy(Proxy):
         return Context(self.state, synchronized_properties)
 
     def set_shared_folders(self, shared_folders: List):
-        normalized_folders = []
-        for folder in shared_folders:
-            normalized_folders.append(pathlib.Path(folder))
+        normalized_folders = [pathlib.Path(folder) for folder in shared_folders]
         self.state.shared_folders = normalized_folders
 
     def load(self, synchronized_properties: SynchronizedProperties):
@@ -478,8 +475,7 @@ class BpyDataProxy(Proxy):
                     # However, it is not obvious to detect the safe cases and remove the message in such cases
                     logger.info("depsgraph update: Ignoring embedded %r", datablock)
                 continue
-            delta = proxy.diff(datablock, datablock.name, None, context)
-            if delta:
+            if delta := proxy.diff(datablock, datablock.name, None, context):
                 logger.info("depsgraph update: update %r", datablock)
                 # TODO add an apply mode to diff instead to avoid two traversals ?
                 proxy.apply_to_proxy(datablock, delta, context)
@@ -580,7 +576,7 @@ class BpyDataProxy(Proxy):
 
             datablock = self.state.datablock(uuid)
             tmp_name = f"_mixer_tmp_{uuid}"
-            if datablock.name != new_name and datablock.name != old_name:
+            if datablock.name not in [new_name, old_name]:
                 # local receives a rename, but its datablock name does not match the remote datablock name before
                 # the rename. This means that one of these happened:
                 # - local has renamed the datablock and remote will receive the rename command later on
@@ -653,9 +649,8 @@ class BpyDataProxy(Proxy):
 
         # avoid logging large number of error messages with very large scenes
         max_items = 5
-        unregistered_libraries = state.unregistered_libraries
-        unregistered_libraries_count = len(unregistered_libraries)
-        if unregistered_libraries:
+        if unregistered_libraries := state.unregistered_libraries:
+            unregistered_libraries_count = len(unregistered_libraries)
             logger.warning(f"sanity_check: {unregistered_libraries_count} unregistered libraries ...")
             for lib in islice(unregistered_libraries, max_items):
                 logger.warning(f"... {lib}. Library file may be missing.")
@@ -673,10 +668,9 @@ class BpyDataProxy(Proxy):
             logger.warning("... check for missing libraries or other files")
             logger.warning("... datablocks referencing broken files may be removed from peers !")
 
-        # given that none_datablocks are missing because of missing files, so it not an error per se that references to
-        # the are left unresolved
-        unresolved_uuids = set(state.unresolved_refs._refs.keys()) - set(none_datablocks)
-        if unresolved_uuids:
+        if unresolved_uuids := set(state.unresolved_refs._refs.keys()) - set(
+            none_datablocks
+        ):
             logger.warning("sanity_check: unresolved_refs not empty ...")
             for uuid in islice(unresolved_uuids, max_items):
                 logger.warning(f"... {uuid} : {state.unresolved_refs._refs[uuid][0][1]}")

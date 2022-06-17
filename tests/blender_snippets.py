@@ -33,10 +33,7 @@ bpy.data.objects.remove(object)
 
 def data_new(collection_name: str, *args: List[Any]) -> str:
     def string(x: Any):
-        if isinstance(x, str):
-            return f"'{x}'"
-        else:
-            return str(x)
+        return f"'{x}'" if isinstance(x, str) else str(x)
 
     s = ",".join([string(x) for x in args])
     return f"""

@@ -95,9 +95,8 @@ class HandlerManager:
             if connect:
                 if handler_on_load not in bpy.app.handlers.load_pre:
                     bpy.app.handlers.load_pre.append(handler_on_load)
-            else:
-                if handler_on_load in bpy.app.handlers.load_pre:
-                    bpy.app.handlers.load_pre.remove(handler_on_load)
+            elif handler_on_load in bpy.app.handlers.load_pre:
+                bpy.app.handlers.load_pre.remove(handler_on_load)
         except Exception as e:
             logger.error("Exception during _set_connection_handler(%s) : %s", connect, e)
 
@@ -230,8 +229,8 @@ def find_renamed(items_before: Mapping[Any, Any], items_after: Mapping[Any, Any]
 
     Rename detection is based on the mapping keys (e.g. uuids)
     """
-    uuids_before = {uuid for uuid in items_before.keys()}
-    uuids_after = {uuid for uuid in items_after.keys()}
+    uuids_before = set(items_before.keys())
+    uuids_after = set(items_after.keys())
     renamed_uuids = {uuid for uuid in uuids_after & uuids_before if items_before[uuid] != items_after[uuid]}
     added_items = [items_after[uuid] for uuid in uuids_after - uuids_before - renamed_uuids]
     removed_items = [items_before[uuid] for uuid in uuids_before - uuids_after - renamed_uuids]
@@ -275,12 +274,10 @@ def update_scenes_state():
         old_objects = {share_data.objects_renamed.get(x, x) for x in scene_info.objects}
         new_objects = {x.name_full for x in scene.collection.objects}
 
-        added_objects = list(new_objects - old_objects)
-        if len(added_objects) > 0:
+        if added_objects := list(new_objects - old_objects):
             share_data.objects_added_to_scene[scene_name] = added_objects
 
-        removed_objects = list(old_objects - new_objects)
-        if len(removed_objects) > 0:
+        if removed_objects := list(old_objects - new_objects):
             share_data.objects_removed_from_scene[scene_name] = removed_objects
 
     # now the new scenes (in case of rename)
@@ -292,8 +289,7 @@ def update_scenes_state():
         for x in new_children:
             share_data.collections_added_to_scene.add((scene_name, x))
 
-        added_objects = {x.name_full for x in scene.collection.objects}
-        if len(added_objects) > 0:
+        if added_objects := {x.name_full for x in scene.collection.objects}:
             share_data.objects_added_to_scene[scene_name] = added_objects
 
 
@@ -324,12 +320,10 @@ def update_collections_state():
         new_objects = {x.name_full for x in collection.objects}
         old_objects = {share_data.objects_renamed.get(x, x) for x in collection_info.objects}
 
-        added_objects = [x for x in new_objects - old_objects]
-        if len(added_objects) > 0:
+        if added_objects := list(new_objects - old_objects):
             share_data.objects_added_to_collection[collection_name] = added_objects
 
-        removed_objects = [x for x in old_objects - new_objects]
-        if len(removed_objects) > 0:
+        if removed_objects := list(old_objects - new_objects):
             share_data.objects_removed_from_collection[collection_name] = removed_objects
 
     # now the new collections (in case of rename)
@@ -341,8 +335,7 @@ def update_collections_state():
         for x in new_children:
             share_data.collections_added_to_collection.add((collection.name_full, x))
 
-        added_objects = {x.name_full for x in collection.objects}
-        if len(added_objects) > 0:
+        if added_objects := {x.name_full for x in collection.objects}:
             share_data.objects_added_to_collection[collection_name] = added_objects
 
 
@@ -496,8 +489,7 @@ def remove_collections():
 def add_objects():
     changed = False
     for obj_name in share_data.objects_added:
-        obj = share_data.blender_objects.get(obj_name)
-        if obj:
+        if obj := share_data.blender_objects.get(obj_name):
             update_params(obj)
             changed = True
     return changed
@@ -506,8 +498,7 @@ def add_objects():
 def update_transforms():
     changed = False
     for obj_name in share_data.objects_added:
-        obj = share_data.blender_objects.get(obj_name)
-        if obj:
+        if obj := share_data.blender_objects.get(obj_name):
             update_transform(obj)
             changed = True
     return changed
@@ -558,8 +549,7 @@ def add_objects_to_scenes():
 def update_collections_parameters():
     changed = False
     for collection in share_data.blender_collections.values():
-        info = share_data.collections_info.get(collection.name_full)
-        if info:
+        if info := share_data.collections_info.get(collection.name_full):
             layer_collection = share_data.blender_layer_collections.get(collection.name_full)
             temporary_hidden = False
             if layer_collection:
@@ -646,8 +636,7 @@ def update_objects_transforms():
 def reparent_objects():
     changed = False
     for obj_name in share_data.objects_reparented:
-        obj = share_data.blender_objects.get(obj_name)
-        if obj:
+        if obj := share_data.blender_objects.get(obj_name):
             update_transform(obj)
             changed = True
     return changed
@@ -662,8 +651,7 @@ def create_vrtist_objects():
 
     changed = False
     for obj_name in share_data.objects_added:
-        obj = scene_objects.get(obj_name)
-        if obj:
+        if obj := scene_objects.get(obj_name):
             scene_api.send_add_object_to_vrtist(share_data.client, bpy.context.scene.name_full, obj.name_full)
             changed = True
     return changed
@@ -692,16 +680,16 @@ def update_objects_data():
             if obj.name_full not in share_data.objects_transformed:
                 transforms.add(obj)
 
-        if (
-            typename == "Camera"
-            or typename == "Mesh"
-            or typename == "Curve"
-            or typename == "Text Curve"
-            or typename == "Sun Light"
-            or typename == "Point Light"
-            or typename == "Spot Light"
-            or typename == "Grease Pencil"
-        ):
+        if typename in [
+            "Camera",
+            "Mesh",
+            "Curve",
+            "Text Curve",
+            "Sun Light",
+            "Point Light",
+            "Spot Light",
+            "Grease Pencil",
+        ]:
             data.add(obj)
 
         if typename == "Material":

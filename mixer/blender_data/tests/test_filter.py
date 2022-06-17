@@ -37,7 +37,7 @@ class TestPointerFilterOut(unittest.TestCase):
         filter_stack.append(filter_set)
         synchronized_properties = SynchronizedProperties(filter_stack, property_order)
         props = synchronized_properties.properties(T.Mesh)
-        self.assertFalse(any([matches_type(p, T.SceneEEVEE) for _, p in props]))
+        self.assertFalse(any(matches_type(p, T.SceneEEVEE) for _, p in props))
 
 
 class TestTypeFilterIn(unittest.TestCase):
@@ -47,5 +47,5 @@ class TestTypeFilterIn(unittest.TestCase):
         filter_stack.append(filter_set)
         synchronized_properties = SynchronizedProperties(filter_stack, property_order)
         props = list(synchronized_properties.properties(T.BlendData))
-        self.assertTrue(any([matches_type(p, T.BlendDataCameras) for _, p in props]))
-        self.assertFalse(any([matches_type(p, T.StringProperty) for _, p in props]))
+        self.assertTrue(any(matches_type(p, T.BlendDataCameras) for _, p in props))
+        self.assertFalse(any(matches_type(p, T.StringProperty) for _, p in props))

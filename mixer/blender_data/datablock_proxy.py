@@ -217,28 +217,29 @@ class DatablockProxy(StructProxy):
         return self
 
     def attach_filepath_raw(self, datablock: T.ID):
-        if hasattr(datablock, "filepath"):
-            filepath = datablock.filepath
-            if len(filepath) == 0:
-                return
-            if filepath[0] == "<" and filepath[-1] == ">":
-                # various builtin names, like "<builtin>" for VectorFont, or "<startup.blend>" for Library
-                return
+        if not hasattr(datablock, "filepath"):
+            return
+        filepath = datablock.filepath
+        if len(filepath) == 0:
+            return
+        if filepath[0] == "<" and filepath[-1] == ">":
+            # various builtin names, like "<builtin>" for VectorFont, or "<startup.blend>" for Library
+            return
 
-            try:
-                path_string = get_source_file_path(bpy.path.abspath(filepath))
-            except OSError as e:
-                logger.warning(f"{datablock!r}: invalid file path {filepath} ...")
-                logger.warning(f"... {e!r}")
-                return
+        try:
+            path_string = get_source_file_path(bpy.path.abspath(filepath))
+        except OSError as e:
+            logger.warning(f"{datablock!r}: invalid file path {filepath} ...")
+            logger.warning(f"... {e!r}")
+            return
 
-            path = pathlib.Path(path_string)
-            if not path.exists():
-                logger.warning(f"{datablock!r}: file with computed source path does not exist ...")
-                logger.warning(f"... filepath: '{filepath}'")
-                logger.warning(f"... abspath:  '{bpy.path.abspath(filepath)}'")
-                logger.warning(f"... source:   '{path_string}'")
-            self._filepath_raw = str(path)
+        path = pathlib.Path(path_string)
+        if not path.exists():
+            logger.warning(f"{datablock!r}: file with computed source path does not exist ...")
+            logger.warning(f"... filepath: '{filepath}'")
+            logger.warning(f"... abspath:  '{bpy.path.abspath(filepath)}'")
+            logger.warning(f"... source:   '{path_string}'")
+        self._filepath_raw = str(path)
 
     def matches_shared_folder(self, filepath_str: str, context: Context):
         filepath = pathlib.Path(filepath_str)
@@ -273,13 +274,12 @@ class DatablockProxy(StructProxy):
         if not self._is_in_shared_folder:
             resolved_filepath = get_resolved_file_path(self._filepath_raw)
             logger.info(f"resolved_filepath: for {self} not in shared folder ...")
-            logger.info(f"... resolve {self._filepath_raw!r} to {resolved_filepath}")
         else:
             resolved_filepath = self.resolve_shared_folder_file(self._filepath_raw, context)
             if resolved_filepath is None:
                 logger.info(f'"{self._filepath_raw}" not in shared_folder')
             logger.info(f"resolved_filepath: for {self} in shared folder ...")
-            logger.info(f"... resolve {self._filepath_raw!r} to {resolved_filepath}")
+        logger.info(f"... resolve {self._filepath_raw!r} to {resolved_filepath}")
         return resolved_filepath
 
     def attach_media_descriptor(self, datablock: T.ID, context: Context):
@@ -289,37 +289,38 @@ class DatablockProxy(StructProxy):
         # - reference to the packed data if packed
         #
         #
-        if hasattr(datablock, "packed_file"):
-            self._is_in_shared_folder = False
-            if self._filepath_raw is None:
-                return
+        if not hasattr(datablock, "packed_file"):
+            return
+        self._is_in_shared_folder = False
+        if self._filepath_raw is None:
+            return
 
-            packed_file = datablock.packed_file
-            data = None
-            if packed_file is not None:
-                data = packed_file.data
-                self._media = (get_source_file_path(self._filepath_raw), data)
-                return
+        packed_file = datablock.packed_file
+        data = None
+        if packed_file is not None:
+            data = packed_file.data
+            self._media = (get_source_file_path(self._filepath_raw), data)
+            return
 
-            relative_to_shared_folder_path = self.matches_shared_folder(self._filepath_raw, context)
-            if relative_to_shared_folder_path is not None:
-                self._filepath_raw = relative_to_shared_folder_path
-                self._is_in_shared_folder = True
-                self._media = None
-                return
+        relative_to_shared_folder_path = self.matches_shared_folder(self._filepath_raw, context)
+        if relative_to_shared_folder_path is not None:
+            self._filepath_raw = relative_to_shared_folder_path
+            self._is_in_shared_folder = True
+            self._media = None
+            return
 
-            path = get_source_file_path(self._filepath_raw)
-            try:
-                abspath = bpy.path.abspath(path)
-                with open(abspath, "rb") as data_file:
-                    data = data_file.read()
-            except Exception as e:
-                logger.error(f"Error while loading {abspath!r} ...")
-                logger.error(f"... for {datablock!r}. Check shared folders ...")
-                logger.error(f"... {e!r}")
-                self._media = None
-            else:
-                self._media = (path, data)
+        path = get_source_file_path(self._filepath_raw)
+        try:
+            abspath = bpy.path.abspath(path)
+            with open(abspath, "rb") as data_file:
+                data = data_file.read()
+        except Exception as e:
+            logger.error(f"Error while loading {abspath!r} ...")
+            logger.error(f"... for {datablock!r}. Check shared folders ...")
+            logger.error(f"... {e!r}")
+            self._media = None
+        else:
+            self._media = (path, data)
 
     @property
     def collection_name(self) -> str:
@@ -362,35 +363,34 @@ class DatablockProxy(StructProxy):
                 # TODO this branch should be obsolete as VRtist commands are no more processed in generic mode
                 logger.info(f"create_standalone_datablock for {self} found existing datablock from VRtist")
                 datablock = existing_datablock
+            elif existing_datablock.mixer_uuid == self.mixer_uuid:
+                # a creation for a datablock that we already have. This should not happen
+                logger.error(f"create_standalone_datablock: unregistered uuid for {self}")
+                logger.error("... update ignored")
+                return None, None
             else:
-                if existing_datablock.mixer_uuid != self.mixer_uuid:
-                    # TODO LIB
+                # TODO LIB
 
-                    # local has a datablock with the same name as remote wants to create, but a different uuid.
-                    # It is a simultaneous creation : rename local's datablock. Remote will do the same thing on its side
-                    # and we will end up will all renamed datablocks
-                    unique_name = f"{existing_datablock.name}_{existing_datablock.mixer_uuid}"
-                    logger.warning(
-                        f"create_standalone_datablock: Creation name conflict. Renamed existing bpy.data.{self.collection_name}[{existing_datablock.name}] into {unique_name}"
+                # local has a datablock with the same name as remote wants to create, but a different uuid.
+                # It is a simultaneous creation : rename local's datablock. Remote will do the same thing on its side
+                # and we will end up will all renamed datablocks
+                unique_name = f"{existing_datablock.name}_{existing_datablock.mixer_uuid}"
+                logger.warning(
+                    f"create_standalone_datablock: Creation name conflict. Renamed existing bpy.data.{self.collection_name}[{existing_datablock.name}] into {unique_name}"
+                )
+
+                # Rename local's and issue a rename command
+                renames.append(
+                    (
+                        existing_datablock.mixer_uuid,
+                        existing_datablock.name,
+                        unique_name,
+                        f"Conflict bpy.data.{self.collection_name}[{self.data('name')}] into {unique_name}",
                     )
+                )
+                existing_datablock.name = unique_name
 
-                    # Rename local's and issue a rename command
-                    renames.append(
-                        (
-                            existing_datablock.mixer_uuid,
-                            existing_datablock.name,
-                            unique_name,
-                            f"Conflict bpy.data.{self.collection_name}[{self.data('name')}] into {unique_name}",
-                        )
-                    )
-                    existing_datablock.name = unique_name
-
-                    datablock = specifics.bpy_data_ctor(self.collection_name, self, context)
-                else:
-                    # a creation for a datablock that we already have. This should not happen
-                    logger.error(f"create_standalone_datablock: unregistered uuid for {self}")
-                    logger.error("... update ignored")
-                    return None, None
+                datablock = specifics.bpy_data_ctor(self.collection_name, self, context)
         else:
             try:
                 datablock = specifics.bpy_data_ctor(self.collection_name, self, context)

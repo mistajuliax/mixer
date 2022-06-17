@@ -67,11 +67,7 @@ class MixerTestCase(unittest.TestCase):
         """
         Tweak test case name for parameterized (from parameterized doc)
         """
-        if params_dict["vrtist_protocol"]:
-            suffix = "_VRtist"
-        else:
-            suffix = "_Generic"
-
+        suffix = "_VRtist" if params_dict["vrtist_protocol"] else "_Generic"
         return test_class.__name__ + suffix
 
     @property
@@ -102,7 +98,7 @@ class MixerTestCase(unittest.TestCase):
             self._server_process.start(server_args=server_args)
 
             # start all the blenders
-            window_width = int(1920 / len(blenderdescs))
+            window_width = 1920 // len(blenderdescs)
 
             for i, blenderdesc in enumerate(blenderdescs):
                 shared_folders = self.shared_folders[i] if i < len(self.shared_folders) else []
@@ -176,14 +172,7 @@ class MixerTestCase(unittest.TestCase):
             host = server_process.host
             port = server_process.port
 
-            scene_upload_delay = 1
-            # Bumping the delay is required when running the tests from VScode text explorer
-            # in debug on a "slow" machine. Otherwise either Blender disconnects before the room
-            # content has been sent or the grabber tries to join the room before it is joinable.
-            # It probably helps solving random failures on the Gitlab runner as well.
-            vscode_debug_delay = 2
-            scene_upload_delay += vscode_debug_delay
-
+            scene_upload_delay = 1 + 2
             grabbers = []
             for i, blender in enumerate(self._blenders):
                 # blender upload room

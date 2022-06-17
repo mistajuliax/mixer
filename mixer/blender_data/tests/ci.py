@@ -44,4 +44,3 @@ def main_ci():
 
 if __name__ == "__main__":
     main_ci()
-    pass

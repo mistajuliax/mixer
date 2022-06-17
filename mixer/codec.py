@@ -59,7 +59,6 @@ def decode_as(message_type: common.MessageType, buffer: bytes) -> Message:
     Decode buffer as message_type. Returns None is mesage_type is not registered
     """
     index = 0
-    args = []
     message_class = registered_message_types.get(message_type)
     if message_class is None:
         raise NotImplementedError(f"No encode/decode function for {message_type}")
@@ -70,6 +69,7 @@ def decode_as(message_type: common.MessageType, buffer: bytes) -> Message:
         return message
     else:
         fields = (f.type for f in dataclasses.fields(message_class))
+        args = []
         for type_ in fields:
             if type_ not in codec_functions:
                 raise NotImplementedError(f"No codec_func for {type_}")
@@ -86,20 +86,6 @@ def decode(command: common.Command) -> Message:
 def encode(message: Message) -> bytes:
     # not tested, actually
     raise NotImplementedError("encode")
-    buffer = b""
-    fields = ((f.name, f.type) for f in dataclasses.fields(message))
-    for (
-        name,
-        type_,
-    ) in fields:
-        if type_ not in codec_functions:
-            raise NotImplementedError(f"No codec_func for {type_}")
-        encode = codec_functions[type_][0]
-
-        attr = getattr(message, name)
-        # TODO need something smarter that multiple reallocations ?
-        buffer += encode(type_)(attr)
-    return buffer
 
 
 def is_registered(message_type: common.MessageType) -> bool:
@@ -122,13 +108,13 @@ _packages = ["mixer.blender_client", "mixer.blender_data"]
 
 def register():
     for p in _packages:
-        mod_name = p + ".codec"
+        mod_name = f"{p}.codec"
         mod = importlib.import_module(mod_name)
         mod.register()
 
 
 def unregister():
     for p in _packages:
-        mod_name = p + ".codec"
+        mod_name = f"{p}.codec"
         mod = importlib.import_module(mod_name)
         mod.unregister()

@@ -74,10 +74,8 @@ def receive_message(data):
 
 def import_asset(data, index):
     name, index = common.decode_string(data, index)
-    asset_index = -1
     old_objects = set(bpy.context.scene.objects)
-    for asset in bpy.context.window_manager.uas_asset_bank.assets:
-        asset_index += 1
+    for asset_index, asset in enumerate(bpy.context.window_manager.uas_asset_bank.assets):
         if asset.nice_name == name:
             # Import
             bpy.ops.uas.asset_bank_import(index=asset_index)
