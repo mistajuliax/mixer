@@ -129,7 +129,7 @@ def start_local_server():
 
 def is_localhost(host):
     # does not catch local address
-    return host == "localhost" or host == "127.0.0.1"
+    return host in ["localhost", "127.0.0.1"]
 
 
 def connect():
@@ -141,17 +141,16 @@ def connect():
         share_data.client = None
 
     if not create_main_client(prefs.host, prefs.port):
-        if is_localhost(prefs.host):
-            if prefs.no_start_server:
-                raise RuntimeError(
-                    f"Cannot connect to existing server at {prefs.host}:{prefs.port} and MIXER_NO_START_SERVER environment variable exists"
-                )
-            start_local_server()
-            if not wait_for_server(prefs.host, prefs.port):
-                raise RuntimeError("Unable to start local server")
-        else:
+        if not is_localhost(prefs.host):
             raise RuntimeError(f"Unable to connect to remote server {prefs.host}:{prefs.port}")
 
+        if prefs.no_start_server:
+            raise RuntimeError(
+                f"Cannot connect to existing server at {prefs.host}:{prefs.port} and MIXER_NO_START_SERVER environment variable exists"
+            )
+        start_local_server()
+        if not wait_for_server(prefs.host, prefs.port):
+            raise RuntimeError("Unable to start local server")
     assert is_client_connected()
 
     set_client_attributes()

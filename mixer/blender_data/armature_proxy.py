@@ -305,14 +305,16 @@ class ArmatureProxy(DatablockProxy):
             #
             # only one object can be in non edit mode : reset active object mode to OBJECT
             #
-            if previous_active_object is not None:
-                if previous_active_object.mode != "OBJECT":
-                    command = Command(
-                        lambda: bpy.ops.object.mode_set(mode="OBJECT"),
-                        lambda: bpy.ops.object.mode_set(mode=previous_active_object.mode),
-                        f"set mode to OBJECT for {previous_active_object!r}",
-                    )
-                    update_state_commands.append(command)
+            if (
+                previous_active_object is not None
+                and previous_active_object.mode != "OBJECT"
+            ):
+                command = Command(
+                    lambda: bpy.ops.object.mode_set(mode="OBJECT"),
+                    lambda: bpy.ops.object.mode_set(mode=previous_active_object.mode),
+                    f"set mode to OBJECT for {previous_active_object!r}",
+                )
+                update_state_commands.append(command)
 
             #
             # set armature Object as active

@@ -100,11 +100,11 @@ class BpyDataCollectionDiff:
                 continue
 
             uuid = datablock.mixer_uuid
-            if uuid in blender_items.keys():
+            if uuid in blender_items:
                 conflicts.append(datablock)
             else:
                 ensure_uuid(datablock)
-                if datablock.mixer_uuid in blender_items.keys():
+                if datablock.mixer_uuid in blender_items:
                     logger.error(f"Duplicate uuid found for {datablock}")
                     continue
 
@@ -123,22 +123,21 @@ class BpyDataCollectionDiff:
                     first_datablock.mixer_uuid = ""
                     ensure_uuid(first_datablock)
                     blender_items[first_datablock.mixer_uuid] = (first_datablock, collection_name)
-            else:
-                if second_datablock.library is not None:
-                    # linked/local: breaks the assumption that local are listed before linked. Strange.
-                    # could do as local.linked if we were sure that is doe"s not have another weird cause
-                    logger.error(
-                        f"Unexpected link datablock {first_datablock} listed before local {second_datablock} ..."
-                    )
-                    logger.error(f"... {second_datablock} ignored")
-                else:
-                    # linked/linked: Conflicts between two linked. One of:
-                    # - a library contains uuids and is indirectly linked more than once
-                    # - a self link
-                    # Probably need to locally reset both uuids, keeping the link target uuid for direct link datablock
-                    logger.error(f"Linked datablock with duplicate uuids {first_datablock} {second_datablock}...")
-                    logger.error("... unsupported")
+            elif second_datablock.library is None:
+                # linked/linked: Conflicts between two linked. One of:
+                # - a library contains uuids and is indirectly linked more than once
+                # - a self link
+                # Probably need to locally reset both uuids, keeping the link target uuid for direct link datablock
+                logger.error(f"Linked datablock with duplicate uuids {first_datablock} {second_datablock}...")
+                logger.error("... unsupported")
 
+            else:
+                # linked/local: breaks the assumption that local are listed before linked. Strange.
+                # could do as local.linked if we were sure that is doe"s not have another weird cause
+                logger.error(
+                    f"Unexpected link datablock {first_datablock} listed before local {second_datablock} ..."
+                )
+                logger.error(f"... {second_datablock} ignored")
         proxy_uuids = set(proxies.keys())
         blender_uuids = set(blender_items.keys())
 

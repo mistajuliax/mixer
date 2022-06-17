@@ -38,8 +38,8 @@ class Grabber:
                     attempts += 1
                     time.sleep(0.01)
 
+                    attempts = 0
                     for command in received_commands:
-                        attempts = 0
                         if command.type == MessageType.SEND_ERROR:
                             message = decode_string(command.data, 0)
                             raise RuntimeError(f"Received error message {message}")
@@ -58,5 +58,5 @@ class Grabber:
             if not client.wait(MessageType.LEAVE_ROOM):
                 raise RuntimeError("Grabber: disconnected before receiving LEAVE_ROOM.")
 
-            count = sum([len(commands) for commands in self.streams.commands.values()])
+            count = sum(len(commands) for commands in self.streams.commands.values())
             assert count > 0, "No message grabbed"

@@ -72,8 +72,7 @@ def update_requires_clear_geometry(incoming_update: MeshProxy, existing_proxy: M
     geometry_updates = _mesh_geometry_properties & set(incoming_update._data.keys())
     for k in geometry_updates:
         existing_length = existing_proxy._data[k].length
-        incoming_soa = incoming_update.data(k)
-        if incoming_soa:
+        if incoming_soa := incoming_update.data(k):
             incoming_length = incoming_soa.length
             if existing_length != incoming_length:
                 logger.debug("apply: length mismatch %s.%s ", existing_proxy, k)
@@ -128,8 +127,10 @@ class VertexGroups:
         return vertex_groups
 
     def to_array_sequence(self) -> ArrayGroup:
-        array_sequence = []
-        array_sequence.extend([([group, "i"], array_) for group, array_ in self.indices.items()])
+        array_sequence = [
+            ([group, "i"], array_) for group, array_ in self.indices.items()
+        ]
+
         array_sequence.extend([([group, "w"], array_) for group, array_ in self.weights.items()])
         return array_sequence
 
@@ -146,8 +147,7 @@ class MeshProxy(DatablockProxy):
         for k in _mesh_geometry_properties:
             soa = getattr(mesh, k)
             existing_length = len(soa)
-            incoming_soa = self.data(k)
-            if incoming_soa:
+            if incoming_soa := self.data(k):
                 incoming_length = len(incoming_soa)
                 if existing_length != incoming_length:
                     logger.debug(

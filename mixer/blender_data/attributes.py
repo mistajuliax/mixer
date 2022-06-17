@@ -152,12 +152,11 @@ def read_attribute(attr: Any, key: Union[int, str], attr_property: T.Property, p
 
 def get_attribute_value(parent, key):
     if isinstance(key, int):
-        target = parent[key]
+        return parent[key]
     elif isinstance(parent, T.bpy_prop_collection):
-        target = parent.get(key)
+        return parent.get(key)
     else:
-        target = getattr(parent, key, None)
-    return target
+        return getattr(parent, key, None)
 
 
 def write_attribute(
@@ -212,13 +211,11 @@ def write_attribute(
 
     except (IndexError, AttributeError) as e:
         if (
-            isinstance(e, AttributeError)
-            and isinstance(parent, bpy.types.Collection)
-            and parent.name == "Master Collection"
-            and key == "name"
+            not isinstance(e, AttributeError)
+            or not isinstance(parent, bpy.types.Collection)
+            or parent.name != "Master Collection"
+            or key != "name"
         ):
-            pass
-        else:
             logger.warning("write_attribute: exception while accessing ...")
             logger.warning(f"... attribute: {context.visit_state.display_path()}.{key}")
             logger.warning(f" ...{e!r}")

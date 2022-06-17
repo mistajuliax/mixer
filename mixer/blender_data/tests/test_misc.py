@@ -58,7 +58,7 @@ class TestLoadProxy(unittest.TestCase):
         # test_misc.TestLoadProxy.test_blenddata
         blend_data = self.proxy._data
         expected_data = {"scenes", "collections", "objects", "materials", "lights"}
-        self.assertTrue(all([e in blend_data.keys() for e in expected_data]))
+        self.assertTrue(all(e in blend_data.keys() for e in expected_data))
 
         expected_uuids = self.expected_uuids(bpy.data.scenes, ["Scene_0", "Scene_1"])
         self.check(self.proxy._data["scenes"], expected_uuids)

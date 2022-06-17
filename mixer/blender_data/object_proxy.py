@@ -206,11 +206,10 @@ class ObjectProxy(DatablockProxy):
             parent_delta = diff_attribute(struct.parent, "parent", parent_property, self._data["parent"], context)
             must_replace |= parent_delta is not None
 
-        if must_replace:
-            diff.load(struct, context)
-            return DeltaReplace(diff)
-        else:
+        if not must_replace:
             return super()._diff(struct, key, prop, context, diff)
+        diff.load(struct, context)
+        return DeltaReplace(diff)
 
     def apply(
         self,
@@ -237,10 +236,7 @@ class ObjectProxy(DatablockProxy):
 
         if to_blender:
             if isinstance(datablock.data, T.Armature):
-                # TODO replace with update.data(("pose", "bones"))
-                # or update["pose"]["bones"]
-                pose = update.data("pose")
-                if pose:
+                if pose := update.data("pose"):
                     if isinstance(pose, Delta):
                         bones = pose.value.data("bones")
                     else:

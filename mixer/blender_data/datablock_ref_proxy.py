@@ -120,17 +120,14 @@ class DatablockRefProxy(Proxy):
                     )
                 else:
                     parent[key] = ref_target
+            elif ref_target is None:
+                context.proxy_state.unresolved_refs.append(
+                    self.mixer_uuid,
+                    lambda datablock: setattr(parent, key, datablock),
+                    f"{context.visit_state.display_path()}.{key} = {self.display_string}",
+                )
             else:
-                # reference stored in a struct (e.g. Object.parent)
-                # This is what saves Camera.dof.focus_object
-                if ref_target is None:
-                    context.proxy_state.unresolved_refs.append(
-                        self.mixer_uuid,
-                        lambda datablock: setattr(parent, key, datablock),
-                        f"{context.visit_state.display_path()}.{key} = {self.display_string}",
-                    )
-                else:
-                    setattr(parent, key, ref_target)
+                setattr(parent, key, ref_target)
         except AttributeError as e:
             # Most often not an error
             # - read_only property

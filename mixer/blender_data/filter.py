@@ -90,7 +90,9 @@ class TypeFilter(Filter):
         return [t.bl_rna for t in self._types]
 
     def matches(self, bl_rna_property):
-        return bl_rna_property.bl_rna in self._rnas or any([is_pointer_to(bl_rna_property, t) for t in self._rnas])
+        return bl_rna_property.bl_rna in self._rnas or any(
+            is_pointer_to(bl_rna_property, t) for t in self._rnas
+        )
 
 
 class TypeFilterIn(TypeFilter):
@@ -112,8 +114,9 @@ class NameFilter(Filter):
             return None
         identifiers = [p.identifier for p in properties]
         local_exclusions = set(self._names) - set(_exclude_names)
-        unknowns = [repr(name) for name in local_exclusions if name not in identifiers]
-        if unknowns:
+        if unknowns := [
+            repr(name) for name in local_exclusions if name not in identifiers
+        ]:
             return f"Unknown properties: {', '.join(unknowns)}. Check spelling"
         return ""
 
@@ -146,10 +149,10 @@ class FilterStack:
 
     @lru_cache()
     def _filter_stack(self):
-        filters = []
-        for filter_set in self._filter_sets:
-            filters.append({None if k is None else k.bl_rna: v for k, v in filter_set.items()})
-        return filters
+        return [
+            {None if k is None else k.bl_rna: v for k, v in filter_set.items()}
+            for filter_set in self._filter_sets
+        ]
 
     def apply(self, bl_rna: T.bpy_struct) -> List[T.Property]:
         properties = list(bl_rna.properties)

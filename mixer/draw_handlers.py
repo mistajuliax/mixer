@@ -306,10 +306,7 @@ def users_selection_draw_iteration(
 
             if obj.type == "EMPTY" and obj.instance_collection is not None:
                 collection = obj.instance_collection
-                if collection_detail:
-                    objects = collection.objects
-                else:
-                    objects = []
+                objects = collection.objects if collection_detail else []
                 parent_matrix = Matrix.Translation(-collection.instance_offset) @ obj.matrix_world
                 per_object_callback(user_dict, obj, parent_matrix @ _bbox_scale_matrix(), DEFAULT_BBOX)
                 if draw_first_only:

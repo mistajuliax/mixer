@@ -55,13 +55,17 @@ def get_object_constraints(o: bpy.types.Object):
             if constraint.target is not None:
                 has_parent_constraint = True
                 parent_target = constraint.target
-        if constraint.type == "TRACK_TO":
+        elif constraint.type == "TRACK_TO":
             if constraint.target is not None:
                 has_look_at_constraint = True
                 look_at_target = constraint.target
 
-    constraints = ObjectConstraint(has_parent_constraint, parent_target, has_look_at_constraint, look_at_target)
-    return constraints
+    return ObjectConstraint(
+        has_parent_constraint,
+        parent_target,
+        has_look_at_constraint,
+        look_at_target,
+    )
 
 
 class CollectionInfo:
@@ -342,8 +346,9 @@ class ShareData:
         temporary_visible = self.blender_collection_temporary_visibility.get(collection_name)
         if temporary_visible is not None:
             share_data.blender_layer_collections_dirty = True
-            layer_collection = self.blender_layer_collections.get(collection_name)
-            if layer_collection:
+            if layer_collection := self.blender_layer_collections.get(
+                collection_name
+            ):
                 layer_collection.hide_viewport = not temporary_visible
             del self.blender_collection_temporary_visibility[collection_name]
 
@@ -367,8 +372,9 @@ class ShareData:
                 self.collections_info[collection.name_full] = collection_info
             for child in collection.children:
                 temporary_hidden = False
-                child_layer_collection = self.blender_layer_collections.get(child.name_full)
-                if child_layer_collection:
+                if child_layer_collection := self.blender_layer_collections.get(
+                    child.name_full
+                ):
                     temporary_hidden = child_layer_collection.hide_viewport
                 collection_info = CollectionInfo(
                     child.hide_viewport,
@@ -426,7 +432,7 @@ class ShareData:
             logger.warning("Generic protocol sync is ON")
             self.bpy_data_proxy = BpyDataProxy()
             if shared_folders is not None:
-                logger.warning("Setting shared folders: " + str(shared_folders))
+                logger.warning(f"Setting shared folders: {str(shared_folders)}")
             else:
                 logger.warning("No shared folder set")
             self.bpy_data_proxy.set_shared_folders(shared_folders)

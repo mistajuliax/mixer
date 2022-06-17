@@ -101,10 +101,7 @@ class SharedFoldersRemoveFolderOperator(bpy.types.Operator):
 
 
 def generic_poll(cls, context):
-    for func, _reason in cls.poll_functors(context):
-        if not func():
-            return False
-    return True
+    return all(func() for func, _reason in cls.poll_functors(context))
 
 
 def generic_description(cls, context, properties):
@@ -149,9 +146,7 @@ class CreateRoomOperator(bpy.types.Operator):
         room = mixer_prefs.room
         logger.warning(f"CreateRoomOperator.execute({room})")
 
-        shared_folders = []
-        for item in mixer_prefs.shared_folders:
-            shared_folders.append(item.shared_folder)
+        shared_folders = [item.shared_folder for item in mixer_prefs.shared_folders]
         create_room(room, mixer_prefs.vrtist_protocol, shared_folders, mixer_prefs.ignore_version_check)
 
         return {"FINISHED"}
@@ -225,9 +220,7 @@ class JoinRoomOperator(bpy.types.Operator):
         clear_undo_history()
 
         mixer_prefs = get_mixer_prefs()
-        shared_folders = []
-        for item in mixer_prefs.shared_folders:
-            shared_folders.append(item.shared_folder)
+        shared_folders = [item.shared_folder for item in mixer_prefs.shared_folders]
         join_room(
             room,
             not room_attributes.get(RoomAttributes.GENERIC_PROTOCOL, True),
@@ -439,9 +432,7 @@ class LaunchVRtistOperator(bpy.types.Operator):
                 return {"CANCELLED"}
 
             logger.warning("LaunchVRtistOperator.execute({mixer_prefs.room})")
-            shared_folders = []
-            for item in mixer_prefs.shared_folders:
-                shared_folders.append(item.shared_folder)
+            shared_folders = [item.shared_folder for item in mixer_prefs.shared_folders]
             mixer_prefs.ignore_version_check = True
             join_room(mixer_prefs.room, True, shared_folders, mixer_prefs.ignore_version_check)
 
@@ -514,9 +505,9 @@ a VR application developed by Ubisoft Animation Studio for immersive animation d
     @classmethod
     def description(cls, context, properties):
         descr = "Toggle between Mixer and VRtist panels.\n"
-        if "MIXER" == properties.panel_mode:
+        if properties.panel_mode == "MIXER":
             descr = cls.mixer_desciption
-        elif "VRTIST" == properties.panel_mode:
+        elif properties.panel_mode == "VRTIST":
             descr = cls.vrtist_desciption
         return descr
 

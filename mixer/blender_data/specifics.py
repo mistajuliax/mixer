@@ -151,10 +151,7 @@ def dispatch_rna(no_rna_impl: Callable[..., Any]):
     def wrapper(bpy_prop_collection: T.bpy_prop_collection, *args, **kwargs):
         """Calls the function registered for bpy_prop_collection.bl_rna"""
         rna = getattr(bpy_prop_collection, "bl_rna", None)
-        if rna is None:
-            func = no_rna_impl
-        else:
-            func = dispatch(type(rna))
+        func = no_rna_impl if rna is None else dispatch(type(rna))
         return func(bpy_prop_collection, *args, **kwargs)
 
     # wrapper.register = register  genarates mypy error
@@ -179,11 +176,7 @@ def dispatch_value(default_func):
         return decorator
 
     def dispatch(value: Any):
-        func = registry.get(value)
-        if func:
-            return func
-
-        return default
+        return func if (func := registry.get(value)) else default
 
     def wrapper(value: Any, *args, **kwargs):
         """Calls the function registered for value"""
@@ -339,8 +332,7 @@ def _(collection_name: str, proxy: DatablockProxy, context: Context) -> Optional
 def _(collection_name: str, proxy: DatablockProxy, context: Context) -> Optional[T.ID]:
     user = proxy._data["user"]
     user_proxy = context.proxy_state.proxies.get(user.mixer_uuid)
-    datablock = proxy.create_shape_key_datablock(user_proxy, context)
-    return datablock
+    return proxy.create_shape_key_datablock(user_proxy, context)
 
 
 def _filter_properties(properties: ItemsView, exclude_names: List[str]) -> ItemsView:
@@ -554,8 +546,7 @@ def pre_save_datablock(proxy: DatablockProxy, target: T.ID, context: Context) ->
             context.proxy_state.remove_datablock(uuid)
             context.proxy_state.add_datablock(uuid, target)
     elif isinstance(target, T.Action):
-        groups = proxy.data("groups")
-        if groups:
+        if groups := proxy.data("groups"):
             groups.save(target.groups, target, "groups", context)
 
     return target
@@ -725,10 +716,7 @@ def _(collection: T.bpy_prop_collection, proxy: Proxy, index: int, context: Cont
     # All keying sets paths have an empty name, and insertion with add() fails
     # with an empty name
     target_ref = proxy.data("id")
-    if target_ref is None:
-        target = None
-    else:
-        target = target_ref.target(context)
+    target = None if target_ref is None else target_ref.target(context)
     data_path = proxy.data("data_path")
     index = proxy.data("array_index")
     group_method = proxy.data("group_method")
@@ -775,10 +763,7 @@ def _version():
     return version
 
 
-if _version() < (2, 92, 0):
-    _Sequences = T.Sequences
-else:
-    _Sequences = T.SequencesTopLevel
+_Sequences = T.Sequences if _version() < (2, 92, 0) else T.SequencesTopLevel
 
 
 @add_element.register(_Sequences)  # type: ignore[no-redef]
@@ -1032,10 +1017,14 @@ def clear_from(collection: T.bpy_prop_collection, sequence: List[DatablockProxy]
 @clear_from.register(T.SequenceModifiers)  # type: ignore[no-redef]
 def _(collection: T.bpy_prop_collection, sequence: List[DatablockProxy], context: Context) -> int:
     """clear_from implementation for collections of items that cannot be updated if their "type" attribute changes."""
-    for i, (proxy, item) in enumerate(zip(sequence, collection)):
-        if proxy.data("type") != item.type:
-            return i
-    return min(len(sequence), len(collection))
+    return next(
+        (
+            i
+            for i, (proxy, item) in enumerate(zip(sequence, collection))
+            if proxy.data("type") != item.type
+        ),
+        min(len(sequence), len(collection)),
+    )
 
 
 @clear_from.register(T.Nodes)  # type: ignore[no-redef]

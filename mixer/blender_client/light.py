@@ -66,8 +66,7 @@ def get_light_buffer(obj):
 
 def send_light(client: Client, obj):
     logger.info("send_light %s", obj.name_full)
-    light_buffer = get_light_buffer(obj)
-    if light_buffer:
+    if light_buffer := get_light_buffer(obj):
         client.add_command(common.Command(common.MessageType.LIGHT, light_buffer, 0))
 
 
@@ -89,11 +88,7 @@ def build_light(data):
     light = get_or_create_light(light_name, blighttype)
 
     shadow, start = common.decode_int(data, start)
-    if shadow != 0:
-        light.use_shadow = True
-    else:
-        light.use_shadow = False
-
+    light.use_shadow = shadow != 0
     color, start = common.decode_color(data, start)
     light.color = (color[0], color[1], color[2])
     light.energy, start = common.decode_float(data, start)

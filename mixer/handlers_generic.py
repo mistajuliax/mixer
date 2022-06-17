@@ -51,8 +51,7 @@ def updates_to_check(depsgraph: T.Depsgraph) -> Tuple[Set[T.ID], Set[T.ID]]:
     # When no Object is selected and a Mesh is selected the Object with the selected Mesh is the
     # active_object, but not in selected_objects
     current_objects = set(getattr(bpy.context, "selected_objects", []))
-    active_object = getattr(bpy.context, "active_object", None)
-    if active_object:
+    if active_object := getattr(bpy.context, "active_object", None):
         current_objects.add(active_object)
 
     delayed_updates = set()

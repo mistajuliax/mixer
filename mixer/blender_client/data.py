@@ -136,7 +136,7 @@ def build_data_create(buffer):
         logger.error("Exception during build_data_create")
         for line in traceback.format_exc().splitlines():
             logger.error(line)
-        logger.error(buffer[0:200])
+        logger.error(buffer[:200])
         logger.error("...")
         logger.error(buffer[-200:0])
         logger.error("ignored")
@@ -194,7 +194,7 @@ def build_data_update(buffer: bytes):
         for line in traceback.format_exc().splitlines():
             logger.error(line)
         logger.error(f"During processing of buffer for {delta}")
-        logger.error(buffer[0:200])
+        logger.error(buffer[:200])
         logger.error("...")
         logger.error(buffer[-200:0])
         logger.error("ignored")

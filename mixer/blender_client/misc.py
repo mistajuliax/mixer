@@ -61,5 +61,5 @@ def get_object_path(obj):
     while obj.parent:
         obj = obj.parent
         if obj:
-            path = obj.name_full + "/" + path
+            path = f"{obj.name_full}/{path}"
     return path

@@ -33,10 +33,14 @@ logger = logging.getLogger(__name__)
 
 
 def _find_socket(sockets: Union[T.NodeInputs, T.NodeOutputs], identifier: str) -> int:
-    for i, socket in enumerate(sockets):
-        if socket.identifier == identifier:
-            return i
-    return -1
+    return next(
+        (
+            i
+            for i, socket in enumerate(sockets)
+            if socket.identifier == identifier
+        ),
+        -1,
+    )
 
 
 @serialize

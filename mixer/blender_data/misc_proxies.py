@@ -152,8 +152,7 @@ class SetProxy(Proxy):
 
     @items.setter
     def items(self, value):
-        self._items = list(value)
-        self._items.sort()
+        self._items = sorted(value)
 
     def load(self, attribute: Set[Any]) -> SetProxy:
         """
@@ -360,8 +359,7 @@ class PtrToCollectionItemProxy(Proxy):
     def _collection_proxy(self, datablock: T.ID, context: Context) -> StructCollectionProxy:
         """Returns the StructCollectionProxy that is expected to contain the pointee."""
         datablock_proxy = context.proxy_state.proxies[datablock.mixer_uuid]
-        collection_proxy = datablock_proxy.data(self._path)
-        return collection_proxy
+        return datablock_proxy.data(self._path)
 
     def _compute_index(self, attribute: T.bpy_struct):
         """Returns the index in the pointee bpy_prop_collection (e.g Key.key_blocks) that contains the item referenced
@@ -369,10 +367,10 @@ class PtrToCollectionItemProxy(Proxy):
         if attribute is None:
             return -1
         collection = self._collection(attribute.id_data)
-        for index, item in enumerate(collection):
-            if item == attribute:
-                return index
-        return -1
+        return next(
+            (index for index, item in enumerate(collection) if item == attribute),
+            -1,
+        )
 
     def load(self, attribute: T.bpy_struct) -> PtrToCollectionItemProxy:
         """

@@ -55,7 +55,11 @@ def equals(attr_a, attr_b, synchronized_properties=test_properties):
     if type_a != type_b:
         return False
 
-    if type_a == T.bpy_prop_array:
+    if (
+        type_a == T.bpy_prop_array
+        or not issubclass(type_a, T.bpy_prop_collection)
+        and not issubclass(type_a, T.bpy_struct)
+    ):
         return attr_a == attr_b
     elif issubclass(type_a, T.bpy_prop_collection):
         for key in attr_a.keys():
@@ -63,15 +67,12 @@ def equals(attr_a, attr_b, synchronized_properties=test_properties):
             attr_b_i = attr_b[key]
             if not equals(attr_a_i, attr_b_i):
                 return False
-    elif issubclass(type_a, T.bpy_struct):
+    else:
         for name, _ in synchronized_properties.properties(attr_a.bl_rna):
             attr_a_i = getattr(attr_a, name)
             attr_b_i = getattr(attr_b, name)
             if not equals(attr_a_i, attr_b_i):
                 return False
-    else:
-        return attr_a == attr_b
-
     return True
 
 
@@ -107,7 +108,7 @@ def bl_equals(attr_a, attr_b, msg=None, skip_name=False, synchronized_properties
 
     elif issubclass(type_a, T.bpy_struct):
         for name, _ in synchronized_properties.properties(attr_a.bl_rna):
-            if skip_name and (name == "name" or name == "name_full"):
+            if skip_name and name in ["name", "name_full"]:
                 continue
             attr_a_i = getattr(attr_a, name)
             attr_b_i = getattr(attr_b, name)
@@ -122,9 +123,8 @@ def bl_equals(attr_a, attr_b, msg=None, skip_name=False, synchronized_properties
             if not equal:
                 raise failureException(f'Different values for struct items at key "{name}" : {attr_a_i} and {attr_b_i}')
 
-    else:
-        if attr_a != attr_b:
-            raise failureException(f"Different values : {attr_a} and {attr_b}")
+    elif attr_a != attr_b:
+        raise failureException(f"Different values : {attr_a} and {attr_b}")
 
     return True
 

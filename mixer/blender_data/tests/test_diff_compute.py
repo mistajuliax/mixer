@@ -284,6 +284,9 @@ class Aos(DifferentialCompute):
 
         array_ = co_update._array
         self.assertEqual(len(array_), 4 * 3)
-        vertices = [[x, y, z] for x, y, z in zip(array_[0::3], array_[1::3], array_[2::3])]
+        vertices = [
+            [x, y, z] for x, y, z in zip(array_[::3], array_[1::3], array_[2::3])
+        ]
+
 
         self.assertEqual(vertices, expected_vertices)

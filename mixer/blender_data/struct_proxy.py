@@ -45,10 +45,9 @@ def _create_clear_animation_data(incoming_proxy: StructProxy, existing_struct: T
         if not isinstance(incoming_proxy, NonePtrProxy):
             # None (current blender value) -> not None (incoming proxy)
             existing_struct.animation_data_create()
-    else:
-        if isinstance(incoming_proxy, NonePtrProxy):
-            # not None (current blender value) -> None (incoming proxy)
-            existing_struct.animation_data_clear()
+    elif isinstance(incoming_proxy, NonePtrProxy):
+        # not None (current blender value) -> None (incoming proxy)
+        existing_struct.animation_data_clear()
     return existing_struct.animation_data
 
 
@@ -76,7 +75,6 @@ class StructProxy(Proxy):
 
     def __init__(self):
         self._data = {}
-        pass
 
     def copy_data(self, other: StructProxy):
         self._data = other._data
@@ -167,17 +165,13 @@ class StructProxy(Proxy):
             if to_blender:
                 self.save(attribute, parent, key, context)
         else:
-            # the structure is updated
             if key == "animation_data" and (attribute is None or isinstance(attribute, T.AnimData)):
-                # if animation_data is updated to None (cleared), the parent structure is updated to store
-                # a NonePtrProxy
                 if to_blender:
                     attribute = _create_clear_animation_data(update, parent)
                     if attribute is None:
                         return NonePtrProxy()
-                else:
-                    if isinstance(update, NonePtrProxy):
-                        return NonePtrProxy()
+                elif isinstance(update, NonePtrProxy):
+                    return NonePtrProxy()
             if attribute:
                 for k, member_delta in update._data.items():
                     current_value = self._data.get(k)
@@ -214,8 +208,7 @@ class StructProxy(Proxy):
         # Create a proxy that will be populated with attributes differences.
         diff = self.__class__()
         diff.init(attribute)
-        delta = self._diff(attribute, key, prop, context, diff)
-        return delta
+        return self._diff(attribute, key, prop, context, diff)
 
     def _diff(
         self, attribute: T.bpy_struct, key: Union[int, str], prop: T.Property, context: Context, diff: StructProxy

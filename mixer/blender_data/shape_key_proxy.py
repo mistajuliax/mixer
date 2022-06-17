@@ -91,20 +91,19 @@ class ShapeKeyProxy(DatablockProxy):
         context: Context,
         to_blender: bool = True,
     ) -> StructProxy:
-        if to_blender and isinstance(delta, DeltaReplace):
-            # On the receiver : a full replace is required because Key.key_block must be rebuilt.
-
-            # Update the proxy only
-            result = super().apply(attribute, parent, key, delta, context, False)
-
-            # Replace Key
-            data_uuid = attribute.user.mixer_uuid
-            data_proxy = context.proxy_state.proxies[data_uuid]
-            self.create_shape_key_datablock(data_proxy, context)
-
-            return result
-        else:
+        if not to_blender or not isinstance(delta, DeltaReplace):
             return super().apply(attribute, parent, key, delta, context, to_blender)
+        # On the receiver : a full replace is required because Key.key_block must be rebuilt.
+
+        # Update the proxy only
+        result = super().apply(attribute, parent, key, delta, context, False)
+
+        # Replace Key
+        data_uuid = attribute.user.mixer_uuid
+        data_proxy = context.proxy_state.proxies[data_uuid]
+        self.create_shape_key_datablock(data_proxy, context)
+
+        return result
 
     def _diff(
         self, datablock: T.ID, key: Union[int, str], prop: T.Property, context: Context, diff: DatablockProxy
@@ -112,14 +111,16 @@ class ShapeKeyProxy(DatablockProxy):
         key_blocks = datablock.key_blocks
         key_bocks_property = datablock.bl_rna.properties["key_blocks"]
         key_blocks_proxy = self._data["key_blocks"]
-        must_replace = specifics.diff_must_replace(key_blocks, key_blocks_proxy._sequence, key_bocks_property)
-        if must_replace:
-            # The Key.key_blocks collection must be replaced, and the receiver must call Object.shape_key_clear(),
-            # causing the removal of the Key datablock.
-
-            # Ensure that the whole Key data is available to be reloaded after clear()
-            diff.load(datablock, context)
-            return DeltaReplace(diff)
-        else:
+        if not (
+            must_replace := specifics.diff_must_replace(
+                key_blocks, key_blocks_proxy._sequence, key_bocks_property
+            )
+        ):
             # this delta is processed by the regular apply
             return super()._diff(datablock, key, prop, context, diff)
+        # The Key.key_blocks collection must be replaced, and the receiver must call Object.shape_key_clear(),
+        # causing the removal of the Key datablock.
+
+        # Ensure that the whole Key data is available to be reloaded after clear()
+        diff.load(datablock, context)
+        return DeltaReplace(diff)

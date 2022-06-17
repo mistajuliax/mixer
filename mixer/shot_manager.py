@@ -57,10 +57,9 @@ def get_shot_manager():
 
 
 def get_or_set_current_take(sm_props):
-    current_take = shot_manager.get_current_take(sm_props)
-    if not current_take:
-        current_take = shot_manager.add_take(sm_props, at_index=-1, name="Main Take")
-    return current_take
+    return shot_manager.get_current_take(sm_props) or shot_manager.add_take(
+        sm_props, at_index=-1, name="Main Take"
+    )
 
 
 def build_shot_manager_action(data):
@@ -81,10 +80,7 @@ def build_shot_manager_action(data):
         start, index = common.decode_int(data, index)
         end, index = common.decode_int(data, index)
         camera_name, index = common.decode_string(data, index)
-        camera = None
-        if len(camera_name) > 0:
-            camera = bpy.data.objects[camera_name]
-
+        camera = bpy.data.objects[camera_name] if len(camera_name) > 0 else None
         color, index = common.decode_color(data, index)
 
         # bpy.context.scene.UAS_shot_manager_props.get_isInitialized()
@@ -99,22 +95,18 @@ def build_shot_manager_action(data):
             color=(color[0], color[1], color[2], 1),
             enabled=True,
         )
-    # Delete
     elif action == SMAction.DELETE_SHOT:
         s = shot_manager.get_shot(sm_props, shot_index)
         shot_manager.remove_shot(sm_props, s)
-    # Duplicate
     elif action == SMAction.DUPLICATE_SHOT:
         s = shot_manager.get_shot(sm_props, shot_index)
         new_shot = shot_manager.copy_shot(sm_props, shot=s, at_index=shot_index + 1)
         shot_name, index = common.decode_string(data, index)
         shot.set_name(new_shot, shot_name)
-    # Move
     elif action == SMAction.MOVE_SHOT:
         s = shot_manager.get_shot(sm_props, shot_index)
         offset, index = common.decode_int(data, index)
         shot_manager.move_shot_to_index(sm_props, shot=s, new_index=(shot_index + offset))
-    # Update
     elif action == SMAction.UPDATE_SHOT:
         # take = bpy.context.scene.UAS_shot_manager_props.current_take_name
         start, index = common.decode_int(data, index)
@@ -178,8 +170,7 @@ def get_state():
     for s in shot_manager.get_shots(sm_props):
         new_shot = Shot()
         new_shot.name = shot.get_name(s)
-        camera = shot.get_camera(s)
-        if camera:
+        if camera := shot.get_camera(s):
             new_shot.camera_name = camera.name_full
         new_shot.start = shot.get_start(s)
         new_shot.end = shot.get_end(s)
@@ -224,8 +215,7 @@ def update_scene():
     for i, s in enumerate(shots):
         prev_shot = share_data.shot_manager.shots[i]
         camera_name = ""
-        camera = shot.get_camera(s)
-        if camera:
+        if camera := shot.get_camera(s):
             camera_name = camera.name_full
         if (
             prev_shot.name != shot.get_name(s)

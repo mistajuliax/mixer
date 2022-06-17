@@ -63,7 +63,6 @@ class TestSimultaneousCreate(ThrottledTestCase):
         self.send_strings([create_empty], to=1)
 
         self.assert_matches()
-        pass
 
     def test_empty_unlinked_many(self):
         empties = 2 * 5
@@ -81,11 +80,10 @@ class TestSimultaneousCreate(ThrottledTestCase):
         self.send_strings(create_empties, to=1)
 
         self.assert_matches()
-        pass
 
     def test_object_in_master_collection(self):
-        lights = 2
         if self.vrtist_protocol:
+            lights = 2
             self.expected_counts = {MessageType.LIGHT: lights}
             raise unittest.SkipTest("FAILS: Only one point light remains")
 
@@ -108,9 +106,6 @@ bpy.ops.object.light_add(type="POINT", location=({location}))
         self.send_string(command_1, to=1)
 
         self.assert_matches()
-
-        # Issue #222
-        pass
 
 
 @parameterized_class(

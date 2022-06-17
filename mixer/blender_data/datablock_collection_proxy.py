@@ -75,7 +75,12 @@ class DatablockCollectionProxy(Proxy):
     def reload_datablocks(self, datablocks: Dict[str, T.ID]):
         """Reload datablock references after undo, fixing undone uuids"""
         collection = getattr(bpy.data, self._name)
-        datablocks.update({datablock.mixer_uuid: datablock for datablock in collection if datablock.mixer_uuid != ""})
+        datablocks |= {
+            datablock.mixer_uuid: datablock
+            for datablock in collection
+            if datablock.mixer_uuid != ""
+        }
+
         if self._snapshot_undo_post:
             # Restore uuids for datablocks that had a uuid before undo but have none after undo. Expected to be rare.
             updates = {
@@ -85,7 +90,7 @@ class DatablockCollectionProxy(Proxy):
             }
             for uuid, datablock in updates.items():
                 datablock.mixer_uuid = uuid
-            datablocks.update(updates)
+            datablocks |= updates
 
     def snapshot_undo_pre(self):
         """Record pre undo state to recover undone uuids."""
@@ -313,7 +318,7 @@ class DatablockCollectionProxy(Proxy):
     def search_one(self, name: str) -> Optional[DatablockProxy]:
         """Convenience method to find a proxy by name instead of uuid (for tests only)"""
         results = self.search(name)
-        return None if not results else results[0]
+        return results[0] if results else None
 
 
 @serialize
@@ -356,8 +361,7 @@ class DatablockRefCollectionProxy(Proxy):
         """
         for _, ref_proxy in self._data.items():
             assert isinstance(ref_proxy, DatablockRefProxy)
-            datablock = ref_proxy.target(context)
-            if datablock:
+            if datablock := ref_proxy.target(context):
                 collection.link(datablock)
             else:
                 logger.info(
@@ -408,20 +412,16 @@ class DatablockRefCollectionProxy(Proxy):
                     uuid = ref_update._datablock_uuid
                     datablock = context.proxy_state.datablock(uuid)
                     if isinstance(ref_delta, DeltaAddition):
-                        if datablock is not None:
-                            collection.link(datablock)
-                        else:
+                        if datablock is None:
                             # unloaded datablock
                             logger.warning(
                                 f"delta apply add for {parent!r}.{key}: no datablock for {ref_update.display_string} ({uuid})"
                             )
 
-                    else:
-                        if datablock is not None:
-                            collection.unlink(datablock)
-                        # else
-                        #   we have already processed an Objet removal. Not an error
-
+                        else:
+                            collection.link(datablock)
+                    elif datablock is not None:
+                        collection.unlink(datablock)
                 if isinstance(ref_delta, DeltaAddition):
                     self._data[k] = ref_update
                 else:

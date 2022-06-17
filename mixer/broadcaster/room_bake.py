@@ -139,8 +139,8 @@ def load_room(file_path: str) -> Tuple[dict, List[Command]]:
         string_length = bytes_to_int(data)
         attributes_string = f.read(string_length).decode()
         room_medata = json.loads(attributes_string)
+        prefix_size = 14
         while True:
-            prefix_size = 14
             msg = f.read(prefix_size)
             if not msg:
                 break

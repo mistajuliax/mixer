@@ -137,8 +137,7 @@ class DebugDataTestOperator(bpy.types.Operator):
         # accessible during module load
         from mixer.blender_data.tests.utils import run_tests
 
-        names = get_props().test_names
-        if names:
+        if names := get_props().test_names:
             base = "mixer.blender_data.tests."
             test_names = [base + name for name in names.split()]
         else:

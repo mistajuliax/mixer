@@ -141,7 +141,7 @@ class BlenderClient(Client):
         # Is set to True for messages emitted from a frame change event
         self.synced_time_messages = False
 
-        self.textures: Dict[str, TextureData] = dict()
+        self.textures: Dict[str, TextureData] = {}
 
         self.skip_next_depsgraph_update = False
         # skip_next_depsgraph_update is set to True in the main timer function when a received command
@@ -257,13 +257,12 @@ class BlenderClient(Client):
         old_object = share_data.blender_objects.get(old_name)
         if old_object is not None:
             share_data.blender_objects.get(old_name).name = new_name
-        else:
-            if not share_data.use_vrtist_protocol():
-                # Renamed by the Blender Protocol
-                logger.info(f"build_rename(): old object {old_name} not found. Safe in generic mode")
-            else:
-                logger.info(f"build_rename(): old object {old_name} not found.")
+        elif share_data.use_vrtist_protocol():
+            logger.info(f"build_rename(): old object {old_name} not found.")
 
+        else:
+            # Renamed by the Blender Protocol
+            logger.info(f"build_rename(): old object {old_name} not found. Safe in generic mode")
         share_data.blender_objects_dirty = True
         share_data.old_objects = share_data.blender_objects
 
@@ -371,9 +370,8 @@ class BlenderClient(Client):
             return
         if os.path.exists(path):
             try:
-                f = open(path, "rb")
-                data = f.read()
-                f.close()
+                with open(path, "rb") as f:
+                    data = f.read()
                 self.send_texture_data(get_source_file_path(path), False, width, height, data)
             except Exception as e:
                 logger.error("could not read file %s ...", path)
@@ -498,15 +496,12 @@ class BlenderClient(Client):
         values, index = common.decode_float_array(data, index)
         interpolations, index = common.decode_int_array(data, index)
 
-        animation_data = ob.animation_data
-        if animation_data:
+        if animation_data := ob.animation_data:
             curves = animation_data.action.fcurves
             for curve in curves:
                 if curve.data_path == channel and (channel_index == -1 or curve.array_index == channel_index):
-                    remove_frames = []
                     keyframes = curve.keyframe_points
-                    for i in range(len(keyframes)):
-                        remove_frames.append(keyframes[i].co[0])
+                    remove_frames = [keyframes[i].co[0] for i in range(len(keyframes))]
                     for frame in remove_frames:
                         ob.keyframe_delete(channel, index=channel_index, frame=frame)
                     curve.update()
@@ -591,7 +586,7 @@ class BlenderClient(Client):
 
             # objects may share mesh but baked mesh may be different in instances with different modifiers
             if len(obj.modifiers) > 0:
-                mesh_name = obj.name_full + "_" + mesh_name
+                mesh_name = f"{obj.name_full}_{mesh_name}"
 
         binary_buffer = common.encode_string(path) + common.encode_string(mesh_name)
 
@@ -712,29 +707,30 @@ class BlenderClient(Client):
             self.add_command(common.Command(MessageType.ANIMATION, buffer, 0))
             return
         for fcurve in action.fcurves:
-            if fcurve.data_path == channel_name:
-                if channel_index == -1 or fcurve.array_index == channel_index:
-                    key_count = len(fcurve.keyframe_points)
-                    times = []
-                    values = []
-                    interpolations = []
-                    for keyframe in fcurve.keyframe_points:
-                        times.append(int(keyframe.co[0]))
-                        values.append(keyframe.co[1])
-                        interpolations.append(self.get_interpolation(keyframe))
-                    buffer = (
-                        common.encode_string(obj_name)
-                        + common.encode_string(channel_name)
-                        + common.encode_int(channel_index)
-                        + common.int_to_bytes(key_count, 4)
-                        + struct.pack(f"{len(times)}i", *times)
-                        + common.int_to_bytes(key_count, 4)
-                        + struct.pack(f"{len(values)}f", *values)
-                        + common.int_to_bytes(key_count, 4)
-                        + struct.pack(f"{len(interpolations)}i", *interpolations)
-                    )
-                    self.add_command(common.Command(MessageType.ANIMATION, buffer, 0))
-                    return
+            if fcurve.data_path == channel_name and (
+                channel_index == -1 or fcurve.array_index == channel_index
+            ):
+                key_count = len(fcurve.keyframe_points)
+                times = []
+                values = []
+                interpolations = []
+                for keyframe in fcurve.keyframe_points:
+                    times.append(int(keyframe.co[0]))
+                    values.append(keyframe.co[1])
+                    interpolations.append(self.get_interpolation(keyframe))
+                buffer = (
+                    common.encode_string(obj_name)
+                    + common.encode_string(channel_name)
+                    + common.encode_int(channel_index)
+                    + common.int_to_bytes(key_count, 4)
+                    + struct.pack(f"{len(times)}i", *times)
+                    + common.int_to_bytes(key_count, 4)
+                    + struct.pack(f"{len(values)}f", *values)
+                    + common.int_to_bytes(key_count, 4)
+                    + struct.pack(f"{len(interpolations)}i", *interpolations)
+                )
+                self.add_command(common.Command(MessageType.ANIMATION, buffer, 0))
+                return
 
     def send_camera_animations(self, obj):
         self.send_animation_buffer(obj.name_full, obj.animation_data, "location", 0)
@@ -759,13 +755,12 @@ class BlenderClient(Client):
     def get_rename_buffer(self, old_name, new_name):
         encoded_old_name = old_name.encode()
         encoded_new_name = new_name.encode()
-        buffer = (
+        return (
             common.int_to_bytes(len(encoded_old_name), 4)
             + encoded_old_name
             + common.int_to_bytes(len(encoded_new_name), 4)
             + encoded_new_name
         )
-        return buffer
 
     def send_rename(self, old_name, new_name):
         logger.info("send_rename %s into %s", old_name, new_name)
@@ -773,8 +768,7 @@ class BlenderClient(Client):
 
     def get_delete_buffer(self, name):
         encoded_name = name.encode()
-        buffer = common.int_to_bytes(len(encoded_name), 4) + encoded_name
-        return buffer
+        return common.int_to_bytes(len(encoded_name), 4) + encoded_name
 
     def send_delete(self, obj_name):
         logger.info("send_delate %s", obj_name)
@@ -824,16 +818,14 @@ class BlenderClient(Client):
         return None
 
     def build_play(self, command):
-        ctx = self.override_context()
-        if ctx:
+        if ctx := self.override_context():
             screen_ctx = ctx["screen"]
             if hasattr(screen_ctx, "is_animation_playing") and not screen_ctx.is_animation_playing:
                 share_data.current_camera = ""
                 bpy.ops.screen.animation_play(ctx)
 
     def build_pause(self, command):
-        ctx = self.override_context()
-        if ctx:
+        if ctx := self.override_context():
             screen_ctx = ctx["screen"]
             if hasattr(screen_ctx, "is_animation_playing") and screen_ctx.is_animation_playing:
                 bpy.ops.screen.animation_play(ctx)
@@ -864,7 +856,7 @@ class BlenderClient(Client):
                     if obj.select_get(view_layer=view_layer):
                         scene_selection.add(obj.name_full)
             scene_attributes[scene.name_full][ClientAttributes.USERSCENES_SELECTED_OBJECTS] = list(scene_selection)
-            scene_attributes[scene.name_full][ClientAttributes.USERSCENES_VIEWS] = dict()
+            scene_attributes[scene.name_full][ClientAttributes.USERSCENES_VIEWS] = {}
 
         # Send information about opened windows and 3d areas
         # Will server later to display view frustums of users
@@ -1207,12 +1199,11 @@ def update_params(obj):
         grease_pencil_api.send_grease_pencil_mesh(share_data.client, obj)
         grease_pencil_api.send_grease_pencil_connection(share_data.client, obj)
 
-    if typename == "Mesh" or typename == "Curve" or typename == "Text Curve":
-        if obj.mode == "OBJECT":
-            # materials of imported libraries are sync here
-            for material in obj.data.materials:
-                share_data.client.send_material(material)
-            share_data.client.send_mesh(obj)
+    if typename in ["Mesh", "Curve", "Text Curve"] and obj.mode == "OBJECT":
+        # materials of imported libraries are sync here
+        for material in obj.data.materials:
+            share_data.client.send_material(material)
+        share_data.client.send_mesh(obj)
 
 
 def update_animation_params(obj):

@@ -21,11 +21,7 @@ def _get_class_name(cls, num, params_dict):
     # By default the generated class named includes either the "name"
     # parameter (if present), or the first string value. This example shows
     # multiple parameters being included in the generated class name:
-    return "%s_%s_%s" % (
-        cls.__name__,
-        num,
-        params_dict["name"],
-    )
+    return f'{cls.__name__}_{num}_{params_dict["name"]}'
 
 
 @parameterized_class(

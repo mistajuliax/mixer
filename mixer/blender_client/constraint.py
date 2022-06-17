@@ -78,10 +78,14 @@ def build_remove_constraint(data):
 
 
 def get_constraint(ob, constraint_type: str):
-    for constraint in ob.constraints:
-        if constraint.type == constraint_type:
-            return constraint
-    return None
+    return next(
+        (
+            constraint
+            for constraint in ob.constraints
+            if constraint.type == constraint_type
+        ),
+        None,
+    )
 
 
 def get_or_create_constraint(ob, constraint_type: str):

@@ -29,8 +29,9 @@ def send_collection(client: Client, collection: bpy.types.Collection):
     logger.info("send_collection %s", collection.name_full)
     collection_instance_offset = collection.instance_offset
     temporary_visibility = True
-    layer_collection = share_data.blender_layer_collections.get(collection.name_full)
-    if layer_collection:
+    if layer_collection := share_data.blender_layer_collections.get(
+        collection.name_full
+    ):
         temporary_visibility = not layer_collection.hide_viewport
 
     buffer = (
@@ -66,8 +67,7 @@ def build_collection(data):
     collection.hide_viewport = hide_viewport
     collection.instance_offset = offset
 
-    layer_collection = share_data.blender_layer_collections.get(name_full)
-    if layer_collection:
+    if layer_collection := share_data.blender_layer_collections.get(name_full):
         layer_collection.hide_viewport = not temporary_visibility
     else:
         # if the layer collection does not exists, store its state for later
@@ -91,8 +91,7 @@ def build_collection_removed(data):
 
     # Blender/Blender in VRtist (non generic) mode
     logger.info("build_collectionRemove %s", name_full)
-    collection = share_data.blender_collections.get(name_full)
-    if collection:
+    if collection := share_data.blender_collections.get(name_full):
         # otherwise already removed by Blender protocol
         try:
             del share_data.blender_collections[name_full]
@@ -212,8 +211,7 @@ def build_remove_object_from_collection(data):
     logger.info("build_remove_object_from_collection %s <- %s", collection_name, object_name)
 
     collection = share_data.blender_collections[collection_name]
-    object_ = share_data.blender_objects.get(object_name)
-    if object_:
+    if object_ := share_data.blender_objects.get(object_name):
         # otherwise already removed by Blender protocol
         try:
             collection.objects.unlink(object_)
